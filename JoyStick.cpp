@@ -54,7 +54,6 @@ bool JoyStick::check_X_Axis (void)               //check joystick for any change
 
     JOYSTICK_DEBUG_PRINT("updated x_Cur: ");
     JOYSTICK_DEBUG_PRINTLN(x_Cur);
-
   }
   return x_Chnged;
 }
@@ -190,14 +189,14 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
     JOYSTICK_PROCY_DEBUG_PRINT("(stopped) ");
     JOYSTICK_PROCY_DEBUG_PRINT("new_Spd: ");
     JOYSTICK_PROCY_DEBUG_PRINT(*new_Spd);
-      JOYSTICK_PROCY_DEBUG_PRINT(" new_Dir: ");
-      JOYSTICK_PROCY_DEBUG_PRINTLN(*new_Dir);
+    JOYSTICK_PROCY_DEBUG_PRINT(" new_Dir: ");
+    JOYSTICK_PROCY_DEBUG_PRINTLN(*new_Dir);
   }
   else                                                          //no, joystick requesting movement
   {
     if (y_Cur < Stopped_Low)                                    //is joystick asking to turn right
     { //yes
-      *new_Dir = RIGHT;                                         //yes, trun right
+      *new_Dir = LEFT;                                         //yes, trun right
       *new_Spd = map(y_Cur, Stopped_Low - 1, 0, MINSPEED, MAXSPEED); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCY_DEBUG_FILE("Function: ");
@@ -213,7 +212,7 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
     }
     else                                                        //no, request to tun left
     {
-      *new_Dir = LEFT;
+      *new_Dir = RIGHT;
       *new_Spd = map(y_Cur, Stopped_High + 1, 1023, MINSPEED, MAXSPEED); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCY_DEBUG_FILE("Function: ");
