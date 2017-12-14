@@ -87,8 +87,6 @@ int Motor::get_Current_Dir(void)
 
 /* update_Speed
    updates the current speed from the requested speed
-   updates are limited to the maximum rate of change to prevent abrupt stops and starts
-   for when the chain hits the reed limit switches
    scales the speed to the range for the PWM pulse
 */
 void Motor::update_Speed()
@@ -104,19 +102,8 @@ void Motor::update_Speed()
     MOTOR_DEBUG_PRINT(" requestedSpeed: ");
     MOTOR_DEBUG_PRINT(requestedSpeed);
 
-    int diff;                               //yes, calculate the difference
-    diff = requestedSpeed - currentSpeed;
-    if (abs(diff) > Motor_Max_ROC)          //check if difference greater then max rate of change (ROC)
-    { //limit max acceleration to max rate of change
-      if (diff > 0)                         //check if reading is increasing or decreasing
-        currentSpeed += Motor_Max_ROC;     //reading has gone up,so limit acceleration by adding max rate of change
-      else
-        currentSpeed -= Motor_Max_ROC;     //reading has gone down,so limit acceleration by subtracting max rate of change
-    }
-    else
-    {
-      currentSpeed = requestedSpeed;      //change less than max rate of change, so accept new value
-    }
+    currentSpeed = requestedSpeed;      //change less than max rate of change, so accept new value
+
     MOTOR_DEBUG_PRINT(" updated currentSpeed: ");
     MOTOR_DEBUG_PRINT(currentSpeed);
     /* scale speed to range of PWM. PWM range is 0 t0 255, which is stopped to full speed for the motor. If the upper motor speed is to be restricted,
@@ -139,51 +126,3 @@ void    Motor::update_Dir(void)
   digitalWrite(dir_Pin, currentDir);
 }
 
-/* clearFwdTimer
-  clear timer tracking how long motor has been moving forwards
-*/
-void Motor::clearFwdTimer(void)
-{
-  timeMovingForwards = 0;
-}
-
-/* clearRevTimer
-  clear timer tracking how long motor has been moving backwards
-*/
-void Motor::clearRevTimer(void)
-{
-  timeMovingBackwards = 0;
-}
-
-/* getFwdTimer
-  get time of how long motor has been moving forwards
-*/
-long  Motor::getFwdTimer(void)
-{
-  return  timeMovingForwards;
-}
-
-/* getRevTimer
-  get time of how long motor has been moving backwards
-*/
-long  Motor::getRevTimer(void)
-{
-  return timeMovingBackwards;
-}
-
-
-/* setFwdTimer
-  set timer to current time, so later you then can compare to see how long the motor has been moving
-*/
-void  Motor::setFwdTimer(void)
-{
-  timeMovingForwards = millis();
-}
-
-/* setRevTimer
-  set timer to current time, so later you then can compare to see how long the motor has been moving
-*/
-void  Motor::setRevTimer(void)
-{
-  timeMovingBackwards = millis();
-}
