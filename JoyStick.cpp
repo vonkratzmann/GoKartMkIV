@@ -194,10 +194,10 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
   }
   else                                                          //no, joystick requesting movement
   {
-    if (y_Cur < Stopped_Low)                                    //is joystick asking to turn right
+    if (y_Cur < Stopped_Low)                                    //is joystick asking to skow down
     { //yes
-      *new_Dir = LEFT;                                         //yes, trun right
-      *new_Spd = map(y_Cur, Stopped_Low - 1, 0, MINSPEED, MAXSPEED); //Scale joystick position to speed range for motor
+      *new_Dir = REVERSE;                                         //yes, de-accelerating
+      *new_Spd = map(y_Cur, Stopped_Low - 1, 0, MINSPEED, REVERSEMAXSPEED); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCY_DEBUG_FILE("Function: ");
       JOYSTICK_PROCY_DEBUG_FILE(__FILE__);
@@ -210,9 +210,9 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
       JOYSTICK_PROCY_DEBUG_PRINT("new_Dir: ");
       JOYSTICK_PROCY_DEBUG_PRINTLN(*new_Dir);
     }
-    else                                                        //no, request to tun left
+    else                                                        //no, accelerating
     {
-      *new_Dir = RIGHT;
+      *new_Dir = FORWARD;
       *new_Spd = map(y_Cur, Stopped_High + 1, 1023, MINSPEED, MAXSPEED); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCY_DEBUG_FILE("Function: ");
