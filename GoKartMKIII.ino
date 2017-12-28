@@ -21,11 +21,11 @@
    Uses counter 2 and interrupts to generate fast mode pwm pulses, freq is 1.960kHz
    Normal operation the diagnostic led fashes on and off every second via the ISR
 
-   There are a number of simple diagnostics which can be enable by the #DEFINEs in Yacht.h
+   There are a number of simple diagnostics which can be enable by the #DEFINEs in GoKartMkIII.h
 */
 
 /** Software Structure Overview
-   The system consists of 8 files:
+   The system consists of 6 files:
     GOKartMKIII.ino:  Variable declarations, oject definitions, ISR, Setup and main loop
     GOKartMKIII.h:    Diagnostic definitions, I/O and constants
     JoyStick.cpp:  Joystick class member functions
@@ -34,30 +34,27 @@
     Motor.h:       Motor class decelerations
 
     The main loop logic for the x axis is:
-    check if time to flash the onboard led on or off, used to show program and isr are running and aid with setting up the reed switches
+    check if time to flash the onboard led on or off, used to show program and isr are running 
     check if time to read the joystick, then
-      calls "check_X_Axis()" to check for a change in the x axis of the joystick current reading compared to the last read
-      if there is a change, calls "process_X()" which returns an updated speed and direction via call by reference paramaters.
-      Then with the new speed and direction,
-      checks if moving towards starboard and movement to starboard is inhibited, if yes then stops the motor 
-      checks if moving towards port and movement to port is inhibited, if yes then stops the motor.
-      Then updates the timers which track how long we have been moving forwards or reverse.
-      Finally for the x axis,
-      calls "rudder_Motor.set_Requested_Speed(spd)"  to set new speed
-      calls "rudder_Motor.set_Requested_Dir()" to set new direction.
+    check if x axis of joystick has changed and check if y axis of joystick has changed by calling "check_X_Axis()" and "check_Y_Axis()"
+    
+    if either one has changed process the change,
+    as y changes speed forwards or backwards, always process y before x
+    use the y speed to firstly set the speed and direction for either forwards or backwards by calling process_Y()
+    the reverse speed maximum has a seperate limit to the forward speed to prevent moving in reverse too quickly 
+    then use x to increase or decrease the speed of the left or right wheels to enable turning by calling process_X()
+    to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged 
 
-      Repeats for the y axis.
+    Note the value of X is scaled as a percentage of the current y speed to limit turning rate.
+        
+    Then calls:
+      "left_Motor.update_Speed() to update motor speed from the requested speed
+      "left_Motor.update_Dir()" to update motor direction from the requested direction
+      "right_Motor.update_Speed()" to update motor speed from the requested speed
+      "right_Motor.update_Dir()" to update motor direction from the requested directio
+*/
 
-      Then calls:
-      "rudder_Motor.update_Speed() to update rudder motor speed from the requested speed
-      "rudder_Motor.update_Dir()" to update rudder motor direction from the requested direction
-      "boom_Motor.update_Speed()" to update boom motor speed from the requested speed
-      "boom_Motor.update_Dir()" to update boom motor direction from the requested direction
-
-      Note the above code is only processed each time it is time to read and process the joystick. This fixed period at which it reads and processes the joystick, 
-      limits the system response time and provides the accelaration and de-acceleratio of the motors.    
-
-#include "GoKartMKIII.h"
+#include "GoKartMkIII.h"
 
 #include "JoyStick.h"
 #include "Motor.h"
@@ -67,27 +64,20 @@ int interrupt_Counter = 0;                    //used in main loop to show the IS
 unsigned long  joys_Time_Of_Last_Scan = 0;    //track when we last scanned for joystick changes
 
 uint8_t led = LOW;                            //state of led, initially off
-boolean reedSwitchFlashFlag = false;          //flags to track if flashing led for a change of state of a reed switch
-boolean reedChangeFlag = false;
 
 //define output comparision registers for PWM, Atmega register used to set the duty cycle of the PWM, write 0 to 255
-const uint8_t* rudder_Pwm_Reg   = 0xB3;       // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
-const uint8_t* boom_Pwm_Reg     = 0xB4;       // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
+const uint8_t* left_Pwm_Reg   = 0xB3;       // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
+const uint8_t* right_Pwm_Reg     = 0xB4;       // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
 
 /* define objects */
 
 /* define joystick */
 JoyStick js;  //define joystick
 
-/* define reed switches */
-Switch switch_Rudder_Port(rudder_Port_EndofTravel_Pin, Debounce);
-Switch switch_Rudder_Starboard(rudder_Starboard_EndofTravel_Pin, Debounce);
-Switch switch_Boom_Tight(boom_Tight_EndofTravel_Pin, Debounce);
-Switch switch_Boom_Loose(boom_Loose_EndofTravel_Pin, Debounce);
 
 /* define motors */
-Motor rudder_Motor(rudder_Pwm_Reg, rudder_Dir_Pin, RUDDER_MOTOR_MAXSPEED);
-Motor boom_Motor(boom_Pwm_Reg, boom_Dir_Pin, BOOM_MOTOR_MAXSPEED);
+Motor left_Motor(left_Pwm_Reg, left_Dir_Pin, MOTOR_MAXSPEED);
+Motor right_Motor(right_Pwm_Reg, right_Dir_Pin, MOTOR_MAXSPEED);
 
 /* Interrupt Service Routine for when counter overflows in timer 2 */
 
@@ -154,240 +144,79 @@ void setup(void)
 */
 void loop(void)
 {
-  if (interrupt_Counter >= Qtr_Sec )          //check if quarter of a second has expired
-    flash_Led();
+  int x_Speed = 0;                          //local variable to store new speed for x axis
+  int x_Dir = RIGHT;                        //local variable to store new direction
+  int y_Speed = 0;                          //local variable to store new speed for y axis
+  int y_Dir = FORWARD;                      //local variable to store new direction
+  int left_Speed;                           //local variable to store speed of left wheel
+  int right_Speed;                          //local varialbe to store speed of right wheel
+  int x_Speed_Reduction;                    //local variable to store amount the speed of a turning wheel has to be reduced
+
+  if (interrupt_Counter >= One_Sec )          //check if a second has expired
+    toggle_Led();                             //yes, flash the led
   /* check for any joystick movement and update motor speeds */
+
   if ((millis() - joys_Time_Of_Last_Scan) > JoyStick_Scan_Rate) //check if time to scan joystick for changes to x and Y axis
   {
-    joys_Time_Of_Last_Scan = millis();        //yes, reset timer, check x axis or rudder
-    if (js.check_X_Axis())                     //check if x axis of joystick has changed
-    { //yes, process the X change
-      int spd;                                //local variabe to store new speed
-      int dir;                                //local variabe to store new direction
-      js.process_X(&spd, &dir);               //get new speed and direction
+    joys_Time_Of_Last_Scan = millis();          //yes, reset timer, check x and Y axis for changes
+    if (js.check_X_Axis() || js.check_Y_Axis()) //check if x axis of joystick has changed and check if y axis of joystick has changed
+    {
+      /* yes one has changed, so as y changes speed forwards or backwards, always process y before x
+        use the y speed to firstly set the speed and direction for either forwards or backwards,
+        then use x to increase or decrease the speed of the left or right wheels to enable turning;
+        to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged */
 
-      /* check if moving towards starboard and have hit limit switch for movement to starboard */
-      if (spd != 0 && dir == TOSTARBOARD && switch_Rudder_Starboard.get_Inhibit_Movement_Flag())
-      {
-        spd = 0;                               //yes, stop the motor
-        MAIN_LOOP_DEBUG_PRINT(__FUNCTION__);
-        MAIN_LOOP_DEBUG_PRINTLN(" Inhibit moving to Starboard");
-      }
+      js.process_Y(&y_Speed, &y_Dir);           //get speed and direction for y axis
+      left_Speed     = y_Speed;                 //initialise speeds, set left and righ to same, ie moving straight, not turning
+      right_Speed    = y_Speed;
 
-      /* check if moving towards port and have hit limit switch for movement to port */
-      if (spd != 0 && dir == TOPORT && switch_Rudder_Port.get_Inhibit_Movement_Flag())
+      js.process_X(&x_Speed, &x_Dir);            //get position of x axis?
+      if (x_Speed !=0 && x_Dir == LEFT)          //is it a request to turn and the request is to the left?
       {
-        spd = 0;                                //yes, stop the motor
-        MAIN_LOOP_DEBUG_PRINT(__FUNCTION__);
-        MAIN_LOOP_DEBUG_PRINTLN(" Inhibit moving to Port");
-      }
+        x_Speed_Reduction = map(x_Speed, MINSPEED, LIMIT_TURNING, 0, y_Speed);     //yes, scale the x reduction in speed as a percentage of the current y speed and limit turning rate
 
-      /* update timers which track how long we have been moving forwards or reverse */
-      if (spd == 0)                              //check if stopped
-      {
-        rudder_Motor.clearFwdTimer();           //yes clear timers recording how long motor has been moving
-        rudder_Motor.clearRevTimer();           //clear timer recording how long motor has been moving
+        /* scale as a percentage of the current y speed, so when the y speed is small, and x is at the extreme of the joystick travel
+          you do not have a large reduction in the left or right wheel speeds to perform the turn 
+          also instead of:   x_Speed_Reduction = map(x_Speed, MINSPEED, MAXSPEED, 0, y_Speed); 
+          use:               x_Speed_Reduction = map(x_Speed, MINSPEED, LIMIT_TURNING, 0, y_Speed); 
+          so when travelling fast the value for x_Speed_Reduction will be reduced to stop violent cornering
+          */
+
+        left_Speed -= x_Speed_Reduction;        //slow left wheel speed, by subtracting the scaled y speed, & leave right wheel unchanged
       }
-      else                                      //must be moving
+      else if (x_Speed !=0 && x_Dir == RIGHT)  //no, must be request to move right, slow right wheel & leave left wheel unchanged
       {
-        if (rudder_Motor.getFwdTimer() == 0 && dir == FORWARD)    //if timer was zero, then set timer to current time
-          rudder_Motor.setFwdTimer();                             //so later we can compare this time against tme in future to work out how long motor has been moving
-        if (rudder_Motor.getRevTimer() == 0 && dir == REVERSE)    //if timer was zero, then set timer to current time
-          rudder_Motor.setRevTimer();                           //so later we can compare this time against tme in future to work out how long motor has been moving
+        x_Speed_Reduction = map(x_Speed, MINSPEED, LIMIT_TURNING,  0, y_Speed);  //scale the x reduction in speed as a percentage of the current y speed and limit turning rate
+        right_Speed -= x_Speed_Reduction;                                      //slow right wheel speed, by subtracting the scaled y speed & leave left wheel unchanged
       }
-      rudder_Motor.set_Requested_Speed(spd);    //set new speed
-      rudder_Motor.set_Requested_Dir(dir);      //set new direction
+      
+      left_Motor.set_Requested_Speed(left_Speed);   //set new speed
+      left_Motor.set_Requested_Dir(y_Dir);          //set new direction, have to use Y direction as it determines forwards or backwards
+      right_Motor.set_Requested_Speed(right_Speed); //set new speed
+      right_Motor.set_Requested_Dir(y_Dir);         //set new direction, have to use Y direction as it determines forwards or backwards
+
+      MAIN_LOOP_DEBUG_FILE("Function: ");
+      MAIN_LOOP_DEBUG_FILE(__FILE__);
+      MAIN_LOOP_DEBUG_FILE(",");
+      MAIN_LOOP_DEBUG_PRINT(__FUNCTION__);
+      MAIN_LOOP_DEBUG_PRINT(" x_Speed_Reduction: ");
+      MAIN_LOOP_DEBUG_PRINT(x_Speed_Reduction);
+      MAIN_LOOP_DEBUG_PRINT(" left_Speed: ");
+      MAIN_LOOP_DEBUG_PRINT(left_Speed);
+      MAIN_LOOP_DEBUG_PRINT(" right_Speed: ");
+      MAIN_LOOP_DEBUG_PRINTLN(right_Speed);
     }
-    if (js.check_Y_Axis())                     //check if y axis or boom of joystick has changed
-    { //yes, process the Y change
-      int spd;                                //local variabe to store new speed
-      int dir;                                //local variabe to store new direction
-      js.process_Y(&spd, &dir);               //get new speed and direction
-
-      /* check if boom tightening and have hit the boom tight limit */
-      if (spd != 0 && dir == TIGHTENING && switch_Boom_Tight.get_Inhibit_Movement_Flag())
-      {
-        spd = 0;                                //yes, stop the motor
-        MAIN_LOOP_DEBUG_PRINT(__FUNCTION__);
-        MAIN_LOOP_DEBUG_PRINTLN(" Inhibit Movement boom tightening");
-      }
-
-      /* check if  boom loosening and have hit the boom loose limit switch */
-      if (spd != 0 && dir == LOOSENING && switch_Boom_Loose.get_Inhibit_Movement_Flag())
-      {
-        spd = 0;                                  //yes, stop the motor
-        MAIN_LOOP_DEBUG_PRINT(__FUNCTION__);
-        MAIN_LOOP_DEBUG_PRINTLN(" Inhibit Movement boom loosening");
-      }
-
-      /* update timers which track how long we have been moving forwards or reverse */
-      if (spd == 0)                               //check if stopped
-      {
-        boom_Motor.clearFwdTimer();               //yes clear timers recording how long motor has been moving
-        boom_Motor.clearRevTimer();               //clear timers recording how long motor has been moving
-      }
-      else                                        //must be moving
-      {
-        if (boom_Motor.getFwdTimer() == 0 && dir == FORWARD)    //if timer was zero, then set timer to current time
-          boom_Motor.setFwdTimer();                             //so later we can compare this time against tme in future to work out how long motor has been moving
-        if (boom_Motor.getRevTimer() == 0 && dir == REVERSE)    //if timer was zero, then set timer to current time
-          boom_Motor.setRevTimer();                             //so later we can compare this time against tme in future to work out how long motor has been moving
-      }
-      boom_Motor.set_Requested_Speed(spd);    //set new speed
-      boom_Motor.set_Requested_Dir(dir);      //set new direction
-    }
-    /* now have speed and direction update the motors */
-    rudder_Motor.update_Speed();              //update rudder motor speed from the requested speed
-    rudder_Motor.update_Dir();                //update rudder motor direction from the requested direction
-    boom_Motor.update_Speed();                //update boom motor speed from the requested speed
-    boom_Motor.update_Dir();                  //update boom motor direction from the requested direction
   }
-  /* Check for and process any changes to the end of travel reed switches,
-    done each time around the main loop  */
-  check_Rudder_Starboard_Switch();
-  check_Rudder_Port_Switch();
-  check_Boom_Tight_Switch();
-  check_Boom_Loose_Switch();
+  /* now have speed and direction update the motors */
+  left_Motor.update_Speed();              //update motor speed from the requested speed
+  left_Motor.update_Dir();                //update motor direction from the requested direction
+  right_Motor.update_Speed();             //update motor speed from the requested speed
+  right_Motor.update_Dir();               //update  motor direction from the requested direction
 }
 //end of loop()
 //-------------------------------------
 
-/* Check Rudder starboard switch
-    if switch closed and chain moving in that direction set flag to inhibit movement and stop the motor
-    if switch released only clear inhibit flag if chain has been moving away from the switch for a certain time. This is to deal with overshoot.
-    Only reason code is in seperate function is to make the main loop easier to read.
-*/
-void check_Rudder_Starboard_Switch(void)
-{
-  if (switch_Rudder_Starboard.switch_Changed())                   //check if switch has changed state
-  {
-    reedSwitchFlashFlag = true;                                   //yes, flash diag led
-  }
-  /* check if we have hit the limit switch, regardles if we have changed state or not */
-  if (switch_Rudder_Starboard.get_Switch_State())               //check if switch now closed
-  {
-    switch_Rudder_Starboard.set_Inhibit_Movement_Flag(true);    //yes, set flag to say can't move to starboard
-    if (rudder_Motor.get_Requested_Speed() != 0 && rudder_Motor.get_Requested_Dir() == TOSTARBOARD) //check if not stopped and moving towards starboard
-      rudder_Motor.set_Requested_Speed(0);                      //Yes, stop the motor
-  }
-  else                                                          //switch now open
-  {
-    if (rudder_Motor.get_Requested_Dir() == TOPORT && rudder_Motor.get_Requested_Speed() != 0 &&
-        (millis() - rudder_Motor.getFwdTimer()) > MOTOR_MOVING_TIME)    //check if not stopped, the rudder is moving towards port, and have been moving long enough
-      switch_Rudder_Starboard.set_Inhibit_Movement_Flag(false);       //yes, then clear the flag. Only clears flag if moving to port in case of overshoot
-  }
-}
-//-------------------------------------
-
-/*  Check Rudder port switch
-    if switch closed and chain moving in that direction set flag to inhibit movement and stop the motor
-    if switch released only clear inhibit flag if chain has been moving away from the switch for a certain time. This is to deal with overshoot.
-    Only reason code is in seperate function is to make the main loop easier to read.
-*/
-void check_Rudder_Port_Switch(void)
-{
-  if (switch_Rudder_Port.switch_Changed())                       //check if switch has changed state
-  {
-    reedSwitchFlashFlag = true;                                  //yes, flash diag led
-  }
-  /* check if we have hit the limit switch, regardles if we have changed state or not */
-  if (switch_Rudder_Port.get_Switch_State())                    //check if switch now closed
-  {
-    switch_Rudder_Port.set_Inhibit_Movement_Flag(true);         //yes, set flag to say can't move to port
-    if (rudder_Motor.get_Requested_Speed() != 0 && rudder_Motor .get_Requested_Dir() == TOPORT)  //check if not stopped and moving towards port
-      rudder_Motor.set_Requested_Speed(0);                      //Yes, stop the motor
-  }
-  else                                                          //switch now open
-  {
-    if (rudder_Motor.get_Requested_Dir() == TOSTARBOARD && rudder_Motor.get_Requested_Speed() != 0 &&
-        (millis() - rudder_Motor.getRevTimer()) > MOTOR_MOVING_TIME)    //check if not stopped, the rudder is moving towards starboard, and have been moving long enough
-      switch_Rudder_Port.set_Inhibit_Movement_Flag(false);              //yes, then clear the flag. Only clears flag if moving to starboard in case of overshoot
-  }
-}
-//-------------------------------------
-
-/* Check Boom loose switch
-  if switch closed and chain moving in that direction set flag to inhibit movement and stop the motor
-  if switch released only clear inhibit flag if chain has been moving away from the switch for a certain time. This is to deal with overshoot.
-  Only reason code is in seperate function is to make the main loop easier to read.
-*/
-void check_Boom_Loose_Switch(void)
-{
-  if (switch_Boom_Loose.switch_Changed())                         //check if switch has changed state
-  {
-    reedSwitchFlashFlag = true;                                   //yes, flash diag led
-  }
-  /* check if we have hit the limit switch, regardles if we have changed state or not */
-  if (switch_Boom_Loose.get_Switch_State())                     //check if switch now closed
-  {
-    switch_Boom_Loose.set_Inhibit_Movement_Flag(true);          //yes, set flag to say can't loosen the boom
-    if (boom_Motor.get_Requested_Speed() != 0 && boom_Motor.get_Requested_Dir() == LOOSENING)  //check if not stopped and the boom loosening
-      boom_Motor.set_Requested_Speed(0);                        //Yes, stop the motor
-  }
-  else                                                          //switch now open
-  {
-    if (boom_Motor.get_Requested_Dir() == TIGHTENING && boom_Motor.get_Requested_Speed() != 0 &&
-        (millis() - boom_Motor.getRevTimer()) > MOTOR_MOVING_TIME)    //check if not stopped, the boom is tightening and have been moving long enough
-      switch_Boom_Loose.set_Inhibit_Movement_Flag(false);             //yes, then clear the flag. Only clears flag if the boom tightening in case of overshoot
-  }
-}
-//-------------------------------------
-
-/* Check Boom Tight Switch
-  if switch closed and chain moving in that direction set flag to inhibit movement and stop the motor
-  if switch released only clear inhibit flag if chain has been moving away from the switch for a certain time. This is to deal with overshoot.
-  Only reason code is in seperate function is to make the main loop easier to read.
-*/
-void check_Boom_Tight_Switch(void)
-{
-
-  if (switch_Boom_Tight.switch_Changed())                         //check if switch has changed state
-  {
-    reedSwitchFlashFlag = true;                                   //yes, flash diag led
-  }
-  /* check if we have hit the limit switch, regardles if we have changed state or not */
-  if (switch_Boom_Tight.get_Switch_State())                     //check if switch now closed
-  {
-    switch_Boom_Tight.set_Inhibit_Movement_Flag(true);          //yes, set flag to say can't tighten the boom
-    if (boom_Motor.get_Requested_Speed() != 0 && boom_Motor.get_Requested_Dir() == TIGHTENING)  //check if not stopped and the boom tightening
-      boom_Motor.set_Requested_Speed(0);                        //Yes, stop the motor
-  }
-  else                                                          //switch now open
-  {
-    if (boom_Motor.get_Requested_Dir() == LOOSENING && boom_Motor.get_Requested_Speed() != 0 &&
-        (millis() - boom_Motor.getFwdTimer()) > MOTOR_MOVING_TIME)    //check if not stopped, the boom is loosening and have been moving long enough
-      switch_Boom_Tight.set_Inhibit_Movement_Flag(false);             //yes, then clear the flag. Only clears flag if boom loosening in case of overshoot
-  }
-}
-//-------------------------------------
-
-/* Flash Led
-  flash led for a quarter of a second if a reed switch changes state to aid with setup and testing
-  otherwise flash led on and off for a second to show program is running
-*/
-void flash_Led(void)
-{
-  if (reedSwitchFlashFlag)
-  {
-    reedSwitchFlashFlag = false;               //clear the flag
-    toggle_led();
-    reedChangeFlag = true;                     //set the flag to say displaying led for reed switch change
-    reset_Counter();
-  }
-  else if (reedChangeFlag && interrupt_Counter > Qtr_Sec) //has led been on for a quarter of a second?
-  {
-    toggle_led();
-    reedChangeFlag = false;                     //clear the flag to say displaying led for reed switch change
-    reset_Counter();
-  }
-  else if (interrupt_Counter > One_Sec)
-  {
-    toggle_led();
-    reset_Counter();
-  }
-}
-
-void toggle_led(void)
+void toggle_Led(void)
 {
   led ? led = LOW : led = HIGH;              //swap led state from high to low or low to high
   digitalWrite(LedPin, led);                 //update the led
@@ -400,5 +229,5 @@ void reset_Counter(void)
   sei();                                     //interrupts on
 }
 
-/* end Yacht_V1 */
+/* end GoKartMkIII */
 

@@ -1,7 +1,7 @@
 /* Yacht parameters */
 
-#ifndef Yacht_h
-#define Yacht_h
+#ifndef GoKart_h
+#define GoKart_h
 
 #include "arduino.h"
 
@@ -38,7 +38,7 @@
 #define  ISR_DEBUG_PRINTLN(x) Serial.println(x)
 #endif
 
-/* define to run joystick diagnostics which which print to the serial monitor
+/* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
 //#define  JOYSTICK_DEBUG
@@ -52,6 +52,37 @@
 #define  JOYSTICK_DEBUG_PRINTLN(x)
 #define  JOYSTICK_DEBUG_FILE(x)
 #endif
+
+/* define to run joystick diagnostics for process joystick Y axis and print to the serial monitor
+  comment out before code is released
+*/
+//#define  JOYSTICK_PROCX_DEBUG
+
+#ifdef   JOYSTICK_PROCX_DEBUG
+#define  JOYSTICK_PROCX_DEBUG_PRINT(x)    Serial.print(x)
+#define  JOYSTICK_PROCX_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  JOYSTICK_PROCX_DEBUG_FILE(x)
+#else
+#define  JOYSTICK_PROCX_DEBUG_PRINT(x)
+#define  JOYSTICK_PROCX_DEBUG_PRINTLN(x)
+#define  JOYSTICK_PROCX_DEBUG_FILE(x)
+#endif
+
+/* define to run joystick diagnostics which process joystick Y axis and print to the serial monitor
+  comment out before code is released
+*/
+//#define  JOYSTICK_PROCY_DEBUG
+
+#ifdef   JOYSTICK_PROCY_DEBUG
+#define  JOYSTICK_PROCY_DEBUG_PRINT(x)    Serial.print(x)
+#define  JOYSTICK_PROCY_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  JOYSTICK_PROCY_DEBUG_FILE(x)
+#else
+#define  JOYSTICK_PROCY_DEBUG_PRINT(x)
+#define  JOYSTICK_PROCY_DEBUG_PRINTLN(x)
+#define  JOYSTICK_PROCY_DEBUG_FILE(x)
+#endif
+
 
 /* define to run joystick diagnostics with a slow scan rate
   comment out before code is released
@@ -88,21 +119,6 @@
 #define  MOTOR_DEBUG_FILE(x)
 #endif
 
-/* define to run switch diagnostics which print to the serial monitor
-  comment out before code is released
-*/
-//#define  SWITCH_DEBUG
-
-#ifdef   SWITCH_DEBUG
-#define  SWITCH_DEBUG_PRINT(x)    Serial.print(x)
-#define  SWITCH_DEBUG_PRINTLN(x)  Serial.println(x)
-#define  SWITCH_DEBUG_FILE(x)
-#else
-#define  SWITCH_DEBUG_PRINT(x)
-#define  SWITCH_DEBUG_PRINTLN(x)
-#define  SWITCH_DEBUG_FILE(x)
-#endif
-
 /* define to run main loop diagnostics which print to the serial monitor
   comment out before code is released
 */
@@ -121,10 +137,8 @@
 /* set up directions for motors */
 #define FORWARD     1
 #define REVERSE     0
-#define TOPORT      1
-#define TOSTARBOARD 0
-#define LOOSENING   1
-#define TIGHTENING  0
+#define RIGHT       1
+#define LEFT       0
 
 const int One_Sec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
 const int Qtr_Sec =  490;            //used in main loop to flash led show for a quarter of a second
@@ -139,46 +153,59 @@ const int Qtr_Sec =  490;            //used in main loop to flash led show for a
 */
 
 /* set up stopped range for the joystick */
-const int     Stopped_High = 546;      //setjoystick high range for stopped
-const int     Stopped_Low  = 475;      //setjoystick low range for stopped
-//stopped range is 70
+const int     Stopped_High = 543;      //setjoystick high range for stopped
+const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 
 // As joystick ADC reads 0 to 1023, the joystick range is:
-// | 0-475 | 476 - 546 | 547 - 1023 |
-// |  Low  |  Stopped  |    High    |
-
+//    | 0-479 | 480 - 543 | 544 - 1023 |
+//    |  Low  |  Stopped  |    High    |
+//range  480      64           480
 /* Set up speed range for joystick */
 const int MINSPEED = 0;
-const int MAXSPEED = 481;                     
-
+const int MAXSPEED = 511;             //set to upper limit of joystick, to try to make the joystick look like it's working range is 0 to 511
+const int REVERSEMAXSPEED = 120;      //limit reversse speed
+/* LIMIT_TURNING is used to limit rate of turning to stop violent turns while going fast,
+  so the effective value of variable Speed_Reduction in main loop is made smaller because of increased range 
+  in this case variable Speed_Reduction reduced by a factor of 4*/
+const int LIMIT_TURNING = MAXSPEED * 4;
+//
+//                  Joystick Operation
+//         (orientation with cables at the bottom)
+//
+//                     Forward (dir 1)
+//                        1023
+//
+//   (Dir 0) Left <-     JoyStick   -> Right(dir 1)
+//      0                               1023
+//
+//                     Reverse   (dir 0)
+//                        0
 /*
    Combination of scan rate and maximum Rate of Change (ROC) limit speed of response of system
-   Restrict 0 to max change to approximately 1 second 
-   as scan rate is 50 millseconds, that is 20 scans in 1 second
-   therefore max change on each joystick scan is 48, ie 48 X 20 = 480 ( ie 0 to Stopped Low)
-   from max speed in one direction to maximum speed in other direction will take 3 seconds
-   NOTE if you change stopped range of joystick, these numbers need to be adjusted 
+   Restrict 0 to max change to approximately 2 seconds
+   as scan rate is 50 millseconds, that is 40 scans in 2 seconds
+   therefore max change on each joystick scan is 12, ie 12 X 40 = 480 ( ie 0 to Stopped Low)
+   from max speed in one direction to maximum speed in other direction will take 4 seconds
+   NOTE if you change stopped range of joystick, these numbers need to be adjusted
 */
 
 #ifdef   JOYSTICK_DEBUG_SCAN
-const unsigned long JoyStick_Scan_Rate    = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
+const unsigned long JoyStick_Scan_Rate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
+const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
 #else
-const unsigned long JoyStick_Scan_Rate    = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
+const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
+const int  JoyStick_Max_ROC              = 12;    //limit rate of change allowable by the joystick (see comments above)
 #endif
-const int  JoyStick_Max_ROC              = 48;     //limit rate of change allowable by the joystick (see comments above)
 const int  noise_Mask                    = 0xFFF0; //clear bottom bits to mask any noise on signal
 
 /* ADC I/O for Joystick*/
-const uint8_t rudder_JoystickAnalogPin     = 1;    //x axis of joystick
-const uint8_t boom_JoystickAnalogPin      = 0;    //y xis of joystick
+const uint8_t Xaxis_JoystickAnalogPin     = 1;    //x axis of joystick
+const uint8_t Yaxis_JoystickAnalogPin      = 0;    //y xis of joystick
 
 /* Set up speed range for motor, PWM range is 0 t0 255, which is stopped to full speed for the motor. If the upper motor speed is to be restricted,
    then MOTOR_MAXSPEED is set to something below 255 */
 const int   MOTOR_MINSPEED = 0;
-const int   RUDDER_MOTOR_MAXSPEED = 90;              
-const int   BOOM_MOTOR_MAXSPEED = 127;
-const long  MOTOR_MOVING_TIME = 1500;          //Time in milliseconds a motor has to be moving in one direction before can clear inhibit movement flag
-
+const int   MOTOR_MAXSPEED = 255;
 
 /* Motor Parameters
    Response time of the system is controlled by the joystick max rate of change value.
@@ -193,19 +220,11 @@ const long Debounce = 100;                    //debounce time for switch in mill
 /** motors
    define i/o for each motor driver board, each board has 2 inputs: direction & pwm
 */
-const uint8_t  rudder_Dir_Pin	  = 10;          //sets direction rudder motor turns
-const uint8_t  rudder_Pwm_Pin	  = 11;         //PWM pulse to set the speed of the rudder motor, this is ATmega PB3 OC2A, UNO pin 11
+const uint8_t  left_Dir_Pin	  = 10;         //wired to the motor driver board to set the direction the motor turns
+const uint8_t  left_Pwm_Pin	  = 11;         //PWM pulse to set the speed of the motor, this is ATmega PB3 OC2A, UNO pin 11
 
-const uint8_t  boom_Dir_Pin     = 2;          //sets the direction the boom motor turns
-const uint8_t  boom_Pwm_Pin	    = 3;          //PWM pulse to set the speed of the boom motor, this is ATmega PD3 OC2B, UNO pin 3
-
-/** end of travel detectors
-   define i/O for reed switches to detect end of travel for the chain on each motor
-*/
-const uint8_t  rudder_Port_EndofTravel_Pin      = 8;
-const uint8_t  rudder_Starboard_EndofTravel_Pin	= 9;
-const uint8_t  boom_Loose_EndofTravel_Pin       = 6;
-const uint8_t  boom_Tight_EndofTravel_Pin       = 7;
+const uint8_t  right_Dir_Pin     = 2;       //wired to the motor driver board to set the direction the motor turns
+const uint8_t  right_Pwm_Pin	   = 3;       //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
 
 /* define i/O for led */
 const uint8_t LedPin =  13; //LED connected to digital pin 13
