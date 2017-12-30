@@ -34,19 +34,19 @@
     Motor.h:       Motor class decelerations
 
     The main loop logic for the x axis is:
-    check if time to flash the onboard led on or off, used to show program and isr are running 
+    check if time to flash the onboard led on or off, used to show program and isr are running
     check if time to read the joystick, then
     check if x axis of joystick has changed and check if y axis of joystick has changed by calling "check_X_Axis()" and "check_Y_Axis()"
-    
+
     if either one has changed process the change,
     as y changes speed forwards or backwards, always process y before x
     use the y speed to firstly set the speed and direction for either forwards or backwards by calling process_Y()
-    the reverse speed maximum has a seperate limit to the forward speed to prevent moving in reverse too quickly 
+    the reverse speed maximum has a seperate limit to the forward speed to prevent moving in reverse too quickly
     then use x to increase or decrease the speed of the left or right wheels to enable turning by calling process_X()
-    to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged 
+    to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged
 
     Note the value of X is scaled as a percentage of the current y speed to limit turning rate.
-        
+
     Then calls:
       "left_Motor.update_Speed() to update motor speed from the requested speed
       "left_Motor.update_Dir()" to update motor direction from the requested direction
@@ -153,7 +153,10 @@ void loop(void)
   int x_Speed_Reduction;                    //local variable to store amount the speed of a turning wheel has to be reduced
 
   if (interrupt_Counter >= One_Sec )          //check if a second has expired
+  {
     toggle_Led();                             //yes, flash the led
+    reset_Counter();                          //reset counter
+  }
   /* check for any joystick movement and update motor speeds */
 
   if ((millis() - joys_Time_Of_Last_Scan) > JoyStick_Scan_Rate) //check if time to scan joystick for changes to x and Y axis
@@ -170,26 +173,33 @@ void loop(void)
       left_Speed     = y_Speed;                 //initialise speeds, set left and righ to same, ie moving straight, not turning
       right_Speed    = y_Speed;
 
-      js.process_X(&x_Speed, &x_Dir);            //get position of x axis?
-      if (x_Speed !=0 && x_Dir == LEFT)          //is it a request to turn and the request is to the left?
+      if (y_Dir == REVERSE && y_Speed > REVERSE_MAXPSEED) //check if in reverse and if going to fast
       {
-        x_Speed_Reduction = map(x_Speed, MINSPEED, LIMIT_TURNING, 0, y_Speed);     //yes, scale the x reduction in speed as a percentage of the current y speed and limit turning rate
+        left_Speed  = REVERSE_MAXPSEED;                 //yes, limit speed in reverse
+        right_Speed = REVERSE_MAXPSEED;
+        y_Speed     = REVERSE_MAXPSEED;
+      }
+
+      js.process_X(&x_Speed, &x_Dir);            //get position of x axis?
+      if (x_Speed != 0 && x_Dir == LEFT)         //is it a request to turn and the request is to the left?
+      {
+        x_Speed_Reduction = map(x_Speed, JOYSTICK_MINSPEED, LIMIT_TURNING, 0, y_Speed);     //yes, scale the x reduction in speed as a percentage of the current y speed and limit turning rate
 
         /* scale as a percentage of the current y speed, so when the y speed is small, and x is at the extreme of the joystick travel
-          you do not have a large reduction in the left or right wheel speeds to perform the turn 
-          also instead of:   x_Speed_Reduction = map(x_Speed, MINSPEED, MAXSPEED, 0, y_Speed); 
-          use:               x_Speed_Reduction = map(x_Speed, MINSPEED, LIMIT_TURNING, 0, y_Speed); 
+          you do not have a large reduction in the left or right wheel speeds to perform the turn
+          also instead of:   x_Speed_Reduction = map(x_Speed, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED, 0, y_Speed);
+          use:               x_Speed_Reduction = map(x_Speed, JOYSTICK_MINSPEED, LIMIT_TURNING, 0, y_Speed);
           so when travelling fast the value for x_Speed_Reduction will be reduced to stop violent cornering
-          */
+        */
 
         left_Speed -= x_Speed_Reduction;        //slow left wheel speed, by subtracting the scaled y speed, & leave right wheel unchanged
       }
-      else if (x_Speed !=0 && x_Dir == RIGHT)  //no, must be request to move right, slow right wheel & leave left wheel unchanged
+      else if (x_Speed != 0 && x_Dir == RIGHT) //no, must be request to move right, slow right wheel & leave left wheel unchanged
       {
-        x_Speed_Reduction = map(x_Speed, MINSPEED, LIMIT_TURNING,  0, y_Speed);  //scale the x reduction in speed as a percentage of the current y speed and limit turning rate
+        x_Speed_Reduction = map(x_Speed, JOYSTICK_MINSPEED, LIMIT_TURNING,  0, y_Speed);  //scale the x reduction in speed as a percentage of the current y speed and limit turning rate
         right_Speed -= x_Speed_Reduction;                                      //slow right wheel speed, by subtracting the scaled y speed & leave left wheel unchanged
       }
-      
+
       left_Motor.set_Requested_Speed(left_Speed);   //set new speed
       left_Motor.set_Requested_Dir(y_Dir);          //set new direction, have to use Y direction as it determines forwards or backwards
       right_Motor.set_Requested_Speed(right_Speed); //set new speed
