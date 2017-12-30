@@ -12,7 +12,7 @@ class Motor
     int	          currentSpeed;	       //store current speed
     int           requestedSpeed;      //store the new requested speed
     int	          currentDir;          //store current direction
-    uint8_t       motor_maxspeed;     //maximum physicl speed for the motor
+    uint8_t       motor_maxspeed;     //maximum physical speed for the motor
     int           requestedDir;        //store requested direction
     boolean       stopped;             //flag to say if motor stopped or moving. true is stopped, false indicates moving
     long          timeMovingForwards;  //used to track how long moving forwards

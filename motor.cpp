@@ -108,7 +108,7 @@ void Motor::update_Speed()
     MOTOR_DEBUG_PRINT(currentSpeed);
     /* scale speed to range of PWM. PWM range is 0 t0 255, which is stopped to full speed for the motor. If the upper motor speed is to be restricted,
       then MOTOR_MAXSPEED is set to something below 255 */
-    uint8_t tmpSpeed = map(currentSpeed, MINSPEED, MAXSPEED, MOTOR_MINSPEED, motor_maxspeed);
+    uint8_t tmpSpeed = map(currentSpeed, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED, MOTOR_MINSPEED, motor_maxspeed);
     * pwm_Reg = tmpSpeed;                 //output duty cycle
 
     MOTOR_DEBUG_PRINT(" new scaled Speed: ");
