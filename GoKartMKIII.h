@@ -41,7 +41,7 @@
 /* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
-#define  JOYSTICK_DEBUG
+//#define  JOYSTICK_DEBUG
 
 #ifdef   JOYSTICK_DEBUG
 #define  JOYSTICK_DEBUG_PRINT(x)    Serial.print(x)
@@ -163,12 +163,14 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 /* Set up speed range for joystick */
 const int JOYSTICK_MINSPEED = 0;
 const int JOYSTICK_MAXSPEED = 511;                      //set to upper limit of joystick, to try to make the joystick look like it's working range is 0 to 511
-const int REVERSE_MAXPSEED = JOYSTICK_MAXSPEED/4;       //limit reverse speed
+const int REVERSE_MAXPSEED = JOYSTICK_MAXSPEED / 4;     //limit reverse speed
 
 /* LIMIT_TURNING is used to limit rate of turning to stop violent turns while going fast,
-  so the effective value of variable Speed_Reduction in main loop is made smaller because of increased range 
-  in this case variable Speed_Reduction reduced by a factor of 4*/
-const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 4;
+  so the effective value of variable Speed_Reduction in main loop is made smaller because of increased range
+  eg in this case the variable Speed_Reduction is reduced by a factor of 4
+  eg const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 4;
+*/
+const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 1;      //at the moment no limiting of the turning rate
 //
 //                  Joystick Operation
 //         (orientation with cables at the bottom)
@@ -184,8 +186,8 @@ const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 4;
 /*
    Combination of scan rate and maximum Rate of Change (ROC) limit speed of response of system
    as scan rate is 50 millseconds, that is 20 scans in 1 second
-   therefore max change in one second is 24 X 20 = 480 
-   therefore time to maximum speed is (0 to Stopped Low)/480 = 480/480 = 1 second
+   therefore max change in one second is 48 X 20 = 960
+   therefore time to maximum speed is (0 to Stopped Low)/960 = 480/960 = .5 second
    NOTE if you change stopped range of joystick, these numbers need to be adjusted
 */
 
@@ -196,7 +198,7 @@ const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowab
 #else
 /* note this is the normal version, change this if you want to change the speed of response of the system */
 const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
-const int  JoyStick_Max_ROC              = 24;    //limit rate of change allowable by the joystick (see comments above)
+const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
 const int  noise_Mask                    = 0xFFF0; //clear bottom bits to mask any noise on signal
 
@@ -207,15 +209,15 @@ const uint8_t Yaxis_JoystickAnalogPin     = 0;    //y xis of joystick
 /* Set up speed range for motor, PWM range is 0 t0 255, which is stopped to full speed for the motor. If the upper motor speed is to be restricted,
    then MOTOR_MAXSPEED is set to something below 255 */
 const int   MOTOR_MINSPEED = 0;
-const int   MOTOR_MAXSPEED = 100;
+const int   MOTOR_MAXSPEED = 255;
 
 /* Motor Parameters
    Response time of the system is controlled by the joystick max rate of change value.
-   Motor max rate of change is for when the chain hits the stops,
+   Motor max rate of change is for when the chain hits the stops, if present
    this de-acceleration is not controlled by the joystick
 */
 
-const int  Motor_Max_ROC = 25;               //limit rate of change allowable by the motors (see comments above)
+const int  Motor_Max_ROC = JoyStick_Max_ROC;               //limit rate of change allowable by the motors (see comments above) set the same here as no stops
 
 const long Debounce = 100;                    //debounce time for switch in millisecs
 
