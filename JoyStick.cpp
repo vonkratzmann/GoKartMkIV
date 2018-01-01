@@ -84,24 +84,22 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
     JOYSTICK_DEBUG_PRINT(y_Cur);
     JOYSTICK_DEBUG_PRINT(" ");
     JOYSTICK_DEBUG_PRINT("y_New: ");
-    JOYSTICK_DEBUG_PRINT(y_New);
-    JOYSTICK_DEBUG_PRINT(" ");
+    JOYSTICK_DEBUG_PRINTLN(y_New);
 
     /* do a special check if moving forward and accelerating to limit the forward acceleration */
-    
-    if (y_Cur <= Stopped_Low && y_New < y_Cur) //check if request to move forward and accelerating 
+
+    if (y_Cur <= Stopped_Low && y_New < y_Cur) //check if request to move forward and accelerating
     {
-      if (y_Cur - y_New > JoyStick_Fwd_Max_ROC)  //yes, check if difference greater then forward max rate of change (ROC)
+      if ((y_Cur - y_New) > JoyStick_Fwd_Max_ROC)  //yes, check if difference greater then forward max rate of change (ROC)
         y_Cur -= JoyStick_Fwd_Max_ROC;           //reading has gone down, so limit acceleration by subtracting forward max rate of change
       else
         y_Cur = y_New;                        // change less than max rate of change, so accept new value
+
+      JOYSTICK_DEBUG_PRINT("updated y_Cur when accelerating forward: ");
+      JOYSTICK_DEBUG_PRINTLN(y_Cur);
+      return y_Chnged;
     }
     
-    JOYSTICK_DEBUG_PRINT("updated y_Cur when accelerating forward: ");
-    JOYSTICK_DEBUG_PRINTLN(y_Cur);
-    
-    return y_Chnged;
-
     /* otherwise do the normal processing */
     diff = y_New - y_Cur;
     if (abs(diff) > JoyStick_Max_ROC)       //check if difference greater then max rate of change (ROC)

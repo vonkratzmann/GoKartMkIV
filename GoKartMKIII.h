@@ -41,7 +41,7 @@
 /* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
-//#define  JOYSTICK_DEBUG
+#define  JOYSTICK_DEBUG
 
 #ifdef   JOYSTICK_DEBUG
 #define  JOYSTICK_DEBUG_PRINT(x)    Serial.print(x)
@@ -200,6 +200,7 @@ const int  JoyStick_Fwd_Max_ROC          = 12;   //special limit rate of change 
 /* note this is the debug version, this is not normally changed */
 const unsigned long JoyStick_Scan_Rate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
 const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
+const int  JoyStick_Fwd_Max_ROC          = 12;   //special limit rate of change for acceleration when travelling forward
 #endif
 
 const int  noise_Mask                    = 0xFFF0; //clear bottom bits to mask any noise on signal
