@@ -191,15 +191,17 @@ const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 1;      //at the moment no limitin
    NOTE if you change stopped range of joystick, these numbers need to be adjusted
 */
 
-#ifdef   JOYSTICK_DEBUG_SCAN
+#ifndef   JOYSTICK_DEBUG_SCAN
+/* note this is the normal version, change this if you want to change the speed of response of the system */
+const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
+const int  JoyStick_Max_ROC              = 48;   //limit rate of change allowable by the joystick (see comments above)
+const int  JoyStick_Fwd_Max_ROC          = 12;   //special limit rate of change for acceleration when travelling forward
+#else
 /* note this is the debug version, this is not normally changed */
 const unsigned long JoyStick_Scan_Rate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
 const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
-#else
-/* note this is the normal version, change this if you want to change the speed of response of the system */
-const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
-const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
+
 const int  noise_Mask                    = 0xFFF0; //clear bottom bits to mask any noise on signal
 
 /* ADC I/O for Joystick*/
@@ -209,7 +211,7 @@ const uint8_t Yaxis_JoystickAnalogPin     = 0;    //y xis of joystick
 /* Set up speed range for motor, PWM range is 0 t0 255, which is stopped to full speed for the motor. If the upper motor speed is to be restricted,
    then MOTOR_MAXSPEED is set to something below 255 */
 const int   MOTOR_MINSPEED = 0;
-const int   MOTOR_MAXSPEED = 255;
+const int   MOTOR_MAXSPEED = 190;
 
 /* Motor Parameters
    Response time of the system is controlled by the joystick max rate of change value.
