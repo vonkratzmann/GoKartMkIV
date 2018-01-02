@@ -147,9 +147,9 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
   }
   else                                                          //no, joystick requesting movement
   {
-    if (x_Cur < Stopped_Low)                                    //is joystick asking to move to right
+    if (x_Cur < Stopped_Low)                                    //is joystick asking to move to left
     {
-      *new_Dir = RIGHT;                                          //yes, moving to right
+      *new_Dir = LEFT;                                          //yes, moving to left
       *new_Spd = map(x_Cur, Stopped_Low - 1, 0, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCX_DEBUG_FILE("Function: ");
@@ -163,9 +163,9 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
       JOYSTICK_PROCX_DEBUG_PRINT("new_Dir: ");
       JOYSTICK_PROCX_DEBUG_PRINTLN(*new_Dir);
     }
-    else                                                        //no, request to move to left
+    else                                                        //no, request to move to right
     {
-      *new_Dir = LEFT;
+      *new_Dir = RIGHT;
       *new_Spd = map(x_Cur, Stopped_High + 1, 1023, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCX_DEBUG_FILE("Function: ");

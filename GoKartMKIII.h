@@ -41,7 +41,7 @@
 /* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
-#define  JOYSTICK_DEBUG
+//#define  JOYSTICK_DEBUG
 
 #ifdef   JOYSTICK_DEBUG
 #define  JOYSTICK_DEBUG_PRINT(x)    Serial.print(x)
@@ -107,7 +107,7 @@
 /* define to run motor diagnostics which print to the serial monitor
   comment out before code is released
 */
-//#define  MOTOR_DEBUG
+//a#define  MOTOR_DEBUG
 
 #ifdef   MOTOR_DEBUG
 #define  MOTOR_DEBUG_PRINT(x)    Serial.print(x)
@@ -135,10 +135,10 @@
 #endif
 
 /* set up directions for motors */
-#define FORWARD     1
-#define REVERSE     0
-#define RIGHT       1
-#define LEFT        0
+#define FORWARD     0
+#define REVERSE     1
+#define RIGHT       0
+#define LEFT        1
 
 const int One_Sec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
 const int Qtr_Sec =  490;            //used in main loop to flash led show for a quarter of a second
@@ -163,7 +163,7 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 /* Set up speed range for joystick */
 const int JOYSTICK_MINSPEED = 0;
 const int JOYSTICK_MAXSPEED = 511;                      //set to upper limit of joystick, to try to make the joystick look like it's working range is 0 to 511
-const int REVERSE_MAXPSEED = JOYSTICK_MAXSPEED / 4;     //limit reverse speed
+const int REVERSE_MAXPSEED = JOYSTICK_MAXSPEED / 2;     //limit reverse speed
 
 /* LIMIT_TURNING is used to limit rate of turning to stop violent turns while going fast,
   so the effective value of variable Speed_Reduction in main loop is made smaller because of increased range
@@ -195,7 +195,7 @@ const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 1;      //at the moment no limitin
 /* note this is the normal version, change this if you want to change the speed of response of the system */
 const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
 const int  JoyStick_Max_ROC              = 48;   //limit rate of change allowable by the joystick (see comments above)
-const int  JoyStick_Fwd_Max_ROC          = 12;   //special limit rate of change for acceleration when travelling forward
+const int  JoyStick_Fwd_Max_ROC          = 24;   //special limit rate of change for acceleration when travelling forward
 #else
 /* note this is the debug version, this is not normally changed */
 const unsigned long JoyStick_Scan_Rate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
