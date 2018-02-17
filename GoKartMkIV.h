@@ -197,7 +197,7 @@ const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a
 const int  JoyStick_Max_ROC              = 48;   //limit rate of change allowable by the joystick (see comments above)
 const int  JoyStick_Fwd_Max_ROC          = 24;   //special limit rate of change for acceleration when travelling forward
 #else
-/* note this is the debug version, this is not normally changed */
+/* note this is the debug version, uses a slower scan rate to limit the amount of debug data diaplyed on the serial monitor window*/
 const unsigned long JoyStick_Scan_Rate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
 const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
 const int  JoyStick_Fwd_Max_ROC          = 12;   //special limit rate of change for acceleration when travelling forward
@@ -216,12 +216,7 @@ const int   MOTOR_MAXSPEED = 190;
 
 /* Motor Parameters
    Response time of the system is controlled by the joystick max rate of change value.
-   Motor max rate of change is for when the chain hits the stops, if present
-   this de-acceleration is not controlled by the joystick
 */
-
-const int  Motor_Max_ROC = JoyStick_Max_ROC;               //limit rate of change allowable by the motors (see comments above) set the same here as no stops
-
 const long Debounce = 100;                    //debounce time for switch in millisecs
 
 /** motors
