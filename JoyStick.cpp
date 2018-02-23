@@ -1,5 +1,5 @@
 #include "GoKartMkIV.h"
-#include "JoyStick.h"
+#include "joystick.h"
 
 /* JoyStick constructor
      initialses current x and y positions to the centre of the joystick

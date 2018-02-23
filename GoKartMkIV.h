@@ -107,7 +107,7 @@
 /* define to run motor diagnostics which print to the serial monitor
   comment out before code is released
 */
-//a#define  MOTOR_DEBUG
+//#define  MOTOR_DEBUG
 
 #ifdef   MOTOR_DEBUG
 #define  MOTOR_DEBUG_PRINT(x)    Serial.print(x)
@@ -117,6 +117,21 @@
 #define  MOTOR_DEBUG_PRINT(x)
 #define  MOTOR_DEBUG_PRINTLN(x)
 #define  MOTOR_DEBUG_FILE(x)
+#endif
+
+/* define to run sensor diagnostics which print to the serial monitor
+  comment out before code is released
+*/
+//#define  SENSOR_DEBUG
+
+#ifdef   SENSOR_DEBUG
+#define  SENSOR_DEBUG_PRINT(x)    Serial.print(x)
+#define  SENSOR_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  SENSOR_DEBUG_FILE(x)
+#else
+#define  SENSOR_DEBUG_PRINT(x)
+#define  SENSOR_DEBUG_PRINTLN(x)
+#define  SENSOR_DEBUG_FILE(x)
 #endif
 
 /* define to run main loop diagnostics which print to the serial monitor
@@ -133,6 +148,10 @@
 #define  MAIN_LOOP_DEBUG_PRINTLN(x)
 #define  MAIN_LOOP_DEBUG_FILE(x)
 #endif
+
+//system parameters
+const int MaxSpeedKmh =  15;                                        //maximum speed in km/hr
+const int MaxSpeedmmsec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec
 
 /* set up directions for motors */
 #define FORWARD     0
@@ -163,7 +182,6 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 /* Set up speed range for joystick */
 const int JOYSTICK_MINSPEED = 0;
 const int JOYSTICK_MAXSPEED = 511;                      //set to upper limit of joystick, to try to make the joystick look like it's working range is 0 to 511
-const int REVERSE_MAXPSEED = JOYSTICK_MAXSPEED / 2;     //limit reverse speed
 
 /* LIMIT_TURNING is used to limit rate of turning to stop violent turns while going fast,
   so the effective value of variable Speed_Reduction in main loop is made smaller because of increased range
@@ -209,25 +227,22 @@ const int  noise_Mask                    = 0xFFF0; //clear bottom bits to mask a
 const uint8_t Xaxis_JoystickAnalogPin     = 1;    //x axis of joystick
 const uint8_t Yaxis_JoystickAnalogPin     = 0;    //y xis of joystick
 
-/* Set up speed range for motor, PWM range is 0 t0 255, which is stopped to full speed for the motor. If the upper motor speed is to be restricted,
-   then MOTOR_MAXSPEED is set to something below 255 */
-const int   MOTOR_MINSPEED = 0;
-const int   MOTOR_MAXSPEED = 190;
-
-/* Motor Parameters
-   Response time of the system is controlled by the joystick max rate of change value.
-*/
-const long Debounce = 100;                    //debounce time for switch in millisecs
-
 /** motors
    define i/o for each motor driver board, each board has 2 inputs: direction & pwm
 */
+
 const uint8_t  left_Dir_Pin	  = 10;         //wired to the motor driver board to set the direction the motor turns
 const uint8_t  left_Pwm_Pin	  = 11;         //PWM pulse to set the speed of the motor, this is ATmega PB3 OC2A, UNO pin 11
 
-const uint8_t  right_Dir_Pin     = 2;       //wired to the motor driver board to set the direction the motor turns
-const uint8_t  right_Pwm_Pin	   = 3;       //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
+const uint8_t  right_Dir_Pin  = 2;          //wired to the motor driver board to set the direction the motor turns
+const uint8_t  right_Pwm_Pin	= 3;          //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
 
 /* define i/O for led */
-const uint8_t LedPin =  13; //LED connected to digital pin 13
+const uint8_t LedPin          =  13; //LED connected to digital pin 13
+
+/* define i/O for slotted wheel
+  used to determine speed of goKart
+*/
+const uint8_t Sensor_WheelPin =  5; //Slotted wheel sensor connected to digital pin 5
+
 #endif

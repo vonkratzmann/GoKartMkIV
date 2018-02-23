@@ -6,13 +6,13 @@
 
 #include "Arduino.h"
 
+
 class Motor
 {
   private:
     int	          currentSpeed;	       //store current speed
     int           requestedSpeed;      //store the new requested speed
     int	          currentDir;          //store current direction
-    uint8_t       motor_maxspeed;     //maximum physical speed for the motor
     int           requestedDir;        //store requested direction
     boolean       stopped;             //flag to say if motor stopped or moving. true is stopped, false indicates moving
     long          timeMovingForwards;  //used to track how long moving forwards
@@ -22,7 +22,7 @@ class Motor
     int           dir_Pin;	      //output pin to set direction to the motor
 
   public:
-    Motor(uint8_t*, int, uint8_t);	            //constructor, set PWM comparision register address, direction pin, and maximum speed for the motor
+    Motor(uint8_t*, uint8_t, uint8_t);	            //constructor, set PWM comparision register address, direction pin, and maximum speed for the motor
     void	set_Requested_Speed(int);
     int	  get_Requested_Speed(void);
     void	set_Requested_Dir(int);
@@ -31,12 +31,6 @@ class Motor
     int   get_Current_Dir(void);
     void  update_Speed(void);
     void  update_Dir(void);
-    void  clearFwdTimer(void);
-    void  clearRevTimer(void);
-    long  getFwdTimer(void);
-    long  getRevTimer(void);
-    void  setFwdTimer(void);
-    void  setRevTimer(void);
 };
 
 #endif

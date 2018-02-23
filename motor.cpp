@@ -1,5 +1,5 @@
 #include "GoKartMkIV.h"
-#include "Motor.h"
+#include "motor.h"
 
 /* Diagnostics for motor
    If set to 1 and switch state changes prints out the motor speed
@@ -7,22 +7,23 @@
 */
 
 /* Motor constructor
-   constructor, set speed pin and direction pin
+   constructor, setup pwm register, speed pin, direction pin
    set initial speed and direction
 */
 
-Motor::Motor(uint8_t* par_pwm_reg, int par_direction_pin, uint8_t par_motor_maxspeed)
+Motor::Motor(uint8_t* par_pwm_reg, uint8_t par_direction_pin, uint8_t par_pwm_pin)
 {
   currentSpeed   = 0;                   //set initial speed
   requestedSpeed = 0;                   //set initial speed
-  motor_maxspeed = par_motor_maxspeed;  //set upper phsical speed for the motor
   requestedDir   = FORWARD;             //set initial direction
   currentDir     = FORWARD;             //set initial direction
 
-  dir_Pin = par_direction_pin;            //store pin to be used to set the direction
-  pwm_Reg = par_pwm_reg;                  //store reg to be used to control speed via PWM signal
-  pinMode(dir_Pin, OUTPUT);               //sets the digital direction pin as output
-  digitalWrite(dir_Pin, currentDir);      //sets the initial direction
+  dir_Pin = par_direction_pin;          //store pin to be used to set the direction
+  pwm_Reg = par_pwm_reg;                //store reg to be used to control speed via PWM signa
+  
+  pinMode(par_pwm_pin, OUTPUT);         //set PWM pin as an output
+  pinMode(dir_Pin, OUTPUT);             //sets the direction pin as output
+  digitalWrite(dir_Pin, currentDir);    //sets the initial direction
 }
 
 /* set_Requested_Speed
@@ -107,8 +108,8 @@ void Motor::update_Speed()
     MOTOR_DEBUG_PRINT(" updated currentSpeed: ");
     MOTOR_DEBUG_PRINT(currentSpeed);
     /* scale speed to range of PWM. PWM range is 0 t0 255, which is stopped to full speed for the motor. If the upper motor speed is to be restricted,
-      then MOTOR_MAXSPEED is set to something below 255 */
-    uint8_t tmpSpeed = map(currentSpeed, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED, MOTOR_MINSPEED, motor_maxspeed);
+      then MOTOR_maxPower is set to something below 255 */
+    uint8_t tmpSpeed = map(currentSpeed, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED, 0, 255);
     * pwm_Reg = tmpSpeed;                 //output duty cycle
 
     MOTOR_DEBUG_PRINT(" new scaled Speed: ");

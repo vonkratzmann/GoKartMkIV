@@ -4,13 +4,20 @@
    Date:      13/12/2017
 */
 
-/** System Summary
+
+/** System Parameters
+ *  Maximum speed 15km/hour in forward direction
+ *  Maximum reverse speed is half the maximum forward speed
+ *  
+ */
+
+/** System Harwdare Summary
    System consists of:
    Two 12v DC motors
    A joystick connected to two 10 bit ADCS, forwards 0 to 511,backwards 512 to 1023
    On/Off switch
    12V DC battery
-   Microprocessor
+   Microprocessor - Arduino Uno running a ATmega328
    Driver Printed Circuit Boards for the two DC motors
    8v DC power supply for the microprocessor
    Each motor via a sprocket drives a chain to the two rear wheels
@@ -26,12 +33,12 @@
 
 /** Software Structure Overview
    The system consists of 6 files:
-    GOKartMKIII.ino:  Variable declarations, oject definitions, ISR, Setup and main loop
-    GOKartMKIII.h:    Diagnostic definitions, I/O and constants
-    JoyStick.cpp:  Joystick class member functions
-    JoyStick.h:    Joystick class decelerations
-    Motor.cpp:     Motor class member functions
-    Motor.h:       Motor class decelerations
+    GOKartMKIV.ino:  Variable declarations, oject definitions, ISR, Setup and main loop
+    GOKartMKIV.h:    Diagnostic definitions, I/O and constants
+    joystick.cpp:  Joystick class member functions
+    joystick.h:    Joystick class decelerations
+    motor.cpp:     Motor class member functions
+    motor.h:       Motor class decelerations
 
     The main loop logic for the x axis is:
     check if time to flash the onboard led on or off, used to show program and isr are running
@@ -56,8 +63,11 @@
 
 #include "GoKartMkIV.h"
 
-#include "JoyStick.h"
-#include "Motor.h"
+#include "joystick.h"
+#include "motor.h"
+#include "slotteddisk.h"
+
+
 
 int interrupt_Counter = 0;                    //used in main loop to show the ISR is running
 
@@ -66,18 +76,18 @@ unsigned long  joys_Time_Of_Last_Scan = 0;    //track when we last scanned for j
 uint8_t led = LOW;                            //state of led, initially off
 
 //define output comparision registers for PWM, Atmega register used to set the duty cycle of the PWM, write 0 to 255
-const uint8_t* left_Pwm_Reg   = 0xB3;       // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
-const uint8_t* right_Pwm_Reg     = 0xB4;       // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
+//if 2 lines below included in goKartMkIV.h generates a compile error
+const uint8_t* left_Pwm_Reg    = 0xB3;       // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
+const uint8_t* right_Pwm_Reg   = 0xB4;       // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
 
 /* define objects */
 
 /* define joystick */
 JoyStick js;  //define joystick
 
-
 /* define motors */
-Motor left_Motor(left_Pwm_Reg, left_Dir_Pin, MOTOR_MAXSPEED);
-Motor right_Motor(right_Pwm_Reg, right_Dir_Pin, MOTOR_MAXSPEED);
+Motor left_Motor(left_Pwm_Reg, left_Dir_Pin, left_Pwm_Pin);
+Motor right_Motor(right_Pwm_Reg, right_Dir_Pin, right_Pwm_Pin);
 
 /* Interrupt Service Routine for when counter overflows in timer 2 */
 
@@ -122,8 +132,7 @@ void setup(void)
     //      |    -     |    -     |    -     |    -     |    -    | OCIE2B   |  OCIE2A  |  TOIE2  |
   */
   cli();                                      //stop interrupts
-  pinMode(11, OUTPUT);                        //set PWM pin as an output. On Micro - pin OC2A, PB3, on UNO pin 11
-  pinMode(3, OUTPUT);                         //set PWM pin as an output. On Micro - pin OC2B, PD3, on UNO pin  3
+
   /*
     On TCCR2A, setting the COM2A bits and COM2B bits to 10 provides non-inverted PWM for outputs A and B,
     Clears OC2A & OC2B on Compare Match, set OC2A & OC2B at BOTTOM,
@@ -136,6 +145,7 @@ void setup(void)
   TIMSK2 = _BV(TOIE2);
 
   sei();                                      //enable interrupts  */
+
   return;
 }  //  end of setup()
 
@@ -173,13 +183,6 @@ void loop(void)
       left_Speed     = y_Speed;                 //initialise speeds, set left and righ to same, ie moving straight, not turning
       right_Speed    = y_Speed;
 
-      if (y_Dir == REVERSE && y_Speed > REVERSE_MAXPSEED) //check if in reverse and if going to fast
-      {
-        left_Speed  = REVERSE_MAXPSEED;                 //yes, limit speed in reverse
-        right_Speed = REVERSE_MAXPSEED;
-        y_Speed     = REVERSE_MAXPSEED;
-      }
-
       js.process_X(&x_Speed, &x_Dir);            //get position of x axis?
       if (x_Speed != 0 && x_Dir == LEFT)         //is it a request to turn and the request is to the left?
       {
@@ -216,12 +219,12 @@ void loop(void)
       MAIN_LOOP_DEBUG_PRINT(" right_Speed: ");
       MAIN_LOOP_DEBUG_PRINTLN(right_Speed);
     }
+    /* now have speed and direction update the motors */
+    left_Motor.update_Speed();              //update motor speed from the requested speed
+    left_Motor.update_Dir();                //update motor direction from the requested direction
+    right_Motor.update_Speed();             //update motor speed from the requested speed
+    right_Motor.update_Dir();               //update  motor direction from the requested direction
   }
-  /* now have speed and direction update the motors */
-  left_Motor.update_Speed();              //update motor speed from the requested speed
-  left_Motor.update_Dir();                //update motor direction from the requested direction
-  right_Motor.update_Speed();             //update motor speed from the requested speed
-  right_Motor.update_Dir();               //update  motor direction from the requested direction
 }
 //end of loop()
 //-------------------------------------
