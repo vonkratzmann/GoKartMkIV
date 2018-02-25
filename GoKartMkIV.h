@@ -150,8 +150,11 @@
 #endif
 
 //system parameters
-const int MaxSpeedKmh =  15;                                        //maximum speed in km/hr
-const int MaxSpeedmmsec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec
+/* Note the value of ValidTimeBetweenSlots is only valid for wheels 200mm diameter and larger, and speeds 20km/hr or slower */
+const int MaxSpeedKmh =  15;                                        //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots!!!
+const int MaxSpeedmmsec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec for 15km/hour 4,167mm/sec
+
+const int ReverseSpeedSlower = 2;  //Slow reverse speed compared to forward speed
 
 /* set up directions for motors */
 #define FORWARD     0
@@ -171,6 +174,8 @@ const int Qtr_Sec =  490;            //used in main loop to flash led show for a
      so the change of direction will occur when the motor is stopped
 */
 
+const int JoystickMin = 0;
+const int JoystickMax = 511;                      //range for a perfect joystick,
 /* set up stopped range for the joystick */
 const int     Stopped_High = 543;      //setjoystick high range for stopped
 const int     Stopped_Low  = 480;      //setjoystick low range for stopped
@@ -179,16 +184,14 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 //    | 0-479 | 480 - 543 | 544 - 1023 |
 //    |  Low  |  Stopped  |    High    |
 //range  480      64           480
-/* Set up speed range for joystick */
-const int JOYSTICK_MINSPEED = 0;
-const int JOYSTICK_MAXSPEED = 511;                      //set to upper limit of joystick, to try to make the joystick look like it's working range is 0 to 511
+
 
 /* LIMIT_TURNING is used to limit rate of turning to stop violent turns while going fast,
   so the effective value of variable Speed_Reduction in main loop is made smaller because of increased range
   eg in this case the variable Speed_Reduction is reduced by a factor of 4
-  eg const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 4;
+  eg const int LIMIT_TURNING = JoystickMax * 4;
 */
-const int LIMIT_TURNING = JOYSTICK_MAXSPEED * 1;      //at the moment no limiting of the turning rate
+const int LIMIT_TURNING = JoystickMax * 1;      //at the moment no limiting of the turning rate
 //
 //                  Joystick Operation
 //         (orientation with cables at the bottom)

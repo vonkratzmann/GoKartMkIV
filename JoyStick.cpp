@@ -86,21 +86,6 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
     JOYSTICK_DEBUG_PRINT("y_New: ");
     JOYSTICK_DEBUG_PRINTLN(y_New);
 
-    /* do a special check if moving forward and accelerating to limit the forward acceleration */
-
-    if (y_Cur <= Stopped_Low && y_New < y_Cur) //check if request to move forward and accelerating
-    {
-      if ((y_Cur - y_New) > JoyStick_Fwd_Max_ROC)  //yes, check if difference greater then forward max rate of change (ROC)
-        y_Cur -= JoyStick_Fwd_Max_ROC;           //reading has gone down, so limit acceleration by subtracting forward max rate of change
-      else
-        y_Cur = y_New;                        // change less than max rate of change, so accept new value
-
-      JOYSTICK_DEBUG_PRINT("updated y_Cur when accelerating forward: ");
-      JOYSTICK_DEBUG_PRINTLN(y_Cur);
-      return y_Chnged;
-    }
-    
-    /* otherwise do the normal processing */
     diff = y_New - y_Cur;
     if (abs(diff) > JoyStick_Max_ROC)       //check if difference greater then max rate of change (ROC)
     {
@@ -130,10 +115,7 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
 {
   if (x_Cur <= Stopped_High && x_Cur >= Stopped_Low)            //check if in the stopped range
   {
-    *new_Spd = 0;                                               //yes, stopped so update speed to say stopped
-
-    /* Note direction is not set when at stop position, leave unchanged to prevent unexpected change of direction just before the motor stops.
-       This occurs because of the difference between the Motor_Max_ROC and the Joystick_Max_ROC. Probable they could be the same value. */
+    *new_Spd = 0;                                               //yes, stopped so update speed to say stopped, no need to set direction
 
     JOYSTICK_PROCX_DEBUG_FILE("Function: ");
     JOYSTICK_PROCX_DEBUG_FILE(__FILE__);
@@ -150,7 +132,7 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
     if (x_Cur < Stopped_Low)                                    //is joystick asking to move to left
     {
       *new_Dir = LEFT;                                          //yes, moving to left
-      *new_Spd = map(x_Cur, Stopped_Low - 1, 0, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED); //Scale joystick position to speed range for motor
+      *new_Spd = map(x_Cur, Stopped_Low - 1, 0, JoystickMin, JoystickMax); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCX_DEBUG_FILE("Function: ");
       JOYSTICK_PROCX_DEBUG_FILE(__FILE__);
@@ -166,7 +148,7 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
     else                                                        //no, request to move to right
     {
       *new_Dir = RIGHT;
-      *new_Spd = map(x_Cur, Stopped_High + 1, 1023, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED); //Scale joystick position to speed range for motor
+      *new_Spd = map(x_Cur, Stopped_High + 1, 1023, JoystickMin, JoystickMax); //Scale joystick position to speed range for motor
 
       JOYSTICK_PROCX_DEBUG_FILE("Function: ");
       JOYSTICK_PROCX_DEBUG_FILE(__FILE__);
@@ -191,10 +173,7 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
 {
   if (y_Cur <= Stopped_High && y_Cur >= Stopped_Low)            //check if in the stopped range
   {
-    *new_Spd = 0;                                               //yes, stopped so update speed to say stopped
-
-    /* Note direction is not set when at stop position, leave unchanged to prevent unexpected change of direction just before the motor stops.
-       This occurs because of the difference between the Motor_Max_ROC and the Joystick_Max_ROC. Probable they could be the same value. */
+    *new_Spd = 0;                                               //yes, stopped so update speed to say stopped, no need to set direction
 
     JOYSTICK_PROCY_DEBUG_FILE("Function: ");
     JOYSTICK_PROCY_DEBUG_FILE(__FILE__);
@@ -211,7 +190,12 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
     if (y_Cur < Stopped_Low)                                    //is joystick asking to skow down
     { //yes
       *new_Dir = FORWARD;                                         //yes, moving forward
-      *new_Spd = map(y_Cur, Stopped_Low - 1, 0, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED); //Scale joystick position to speed range for motor
+      /* Scale joystick position to normal range of joystick, ie 0 to 511
+       *  so that forward and reverse are scaled to the same range 
+       *  because in motor routines, the joystick position is scaled to the PWM output range independent of direction
+       *  overcomes issue where "0 to Stopped_Low" is different to "Stopped_High to 511" 
+       */
+      *new_Spd = map(y_Cur, Stopped_Low - 1, 0, JoystickMin, JoystickMax); 
 
       JOYSTICK_PROCY_DEBUG_FILE("Function: ");
       JOYSTICK_PROCY_DEBUG_FILE(__FILE__);
@@ -227,7 +211,12 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
     else                                                        //no, reversing
     {
       *new_Dir = REVERSE;
-      *new_Spd = map(y_Cur, Stopped_High + 1, 1023, JOYSTICK_MINSPEED, JOYSTICK_MAXSPEED); //Scale joystick position to speed range for motor
+      /* Scale joystick position to normal range of joystick, ie 0 to 511
+       *  so that forward and reverse are scaled to the same range 
+       *  because in motor routines, the joystick position is scaled to the PWM output range independent of direction
+       *  overcomes issue where "0 to Stopped_Low" is different to "Stopped_High to 511"
+       */
+      *new_Spd = map(y_Cur, Stopped_High + 1, 1023, JoystickMin, JoystickMax); 
 
       JOYSTICK_PROCY_DEBUG_FILE("Function: ");
       JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__);
