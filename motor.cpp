@@ -34,10 +34,7 @@ void  Motor::set_Requested_Speed(int par_new_speed)
 {
   requestedSpeed = par_new_speed;
 
-  MOTOR_DEBUG_FILE("Function: ");
-  MOTOR_DEBUG_FILE(__FILE__);
-  MOTOR_DEBUG_FILE(",");
-  MOTOR_DEBUG_PRINT(__FUNCTION__);;
+  MOTOR_DEBUG_PRINT(__FUNCTION__);
   MOTOR_DEBUG_PRINT(" requestedSpeed: ");
   MOTOR_DEBUG_PRINT(requestedSpeed);
 }
@@ -57,7 +54,8 @@ int Motor::get_Requested_Speed(void)
 void  Motor::set_Requested_Dir(int par_new_direction)
 {
   requestedDir = par_new_direction;
-
+  
+  MOTOR_DEBUG_PRINT(__FUNCTION__);
   MOTOR_DEBUG_PRINT(" requestedDir: ");
   MOTOR_DEBUG_PRINTLN(requestedDir);
 }
@@ -94,9 +92,6 @@ void Motor::update_Speed()
 {
   if (requestedSpeed != currentSpeed)    //Check if need to update speed
   {
-    MOTOR_DEBUG_FILE("Function: ");
-    MOTOR_DEBUG_FILE(__FILE__);
-    MOTOR_DEBUG_FILE(",");
     MOTOR_DEBUG_PRINT(__FUNCTION__);
     MOTOR_DEBUG_PRINT(" currentSpeed: ");
     MOTOR_DEBUG_PRINT(currentSpeed);

@@ -35,9 +35,6 @@ void SlottedDisk::sensor_Check(void)
             timeOfLastSlot2 = timeOfLastSlot1;  //yes, update the times, move last time for a slot to the second last time for a slot 
             timeOfLastSlot1 = millis();         //store the time this occurred so later can calculate the speed of the wheel
     }
-    SENSOR_DEBUG_FILE("Function: ");
-    SENSOR_DEBUG_FILE(__FILE__);
-    SENSOR_DEBUG_FILE(",");
     SENSOR_DEBUG_PRINT(__FUNCTION__);
     SENSOR_DEBUG_PRINT(" sensor_State: ");
     SENSOR_DEBUG_PRINTLN(sensor_State);
@@ -50,14 +47,11 @@ void SlottedDisk::calculate_Speed(void)
 {
   int timeBetweenSlots = timeOfLastSlot1 - timeOfLastSlot2;
   if (timeBetweenSlots >= minTimeBetweenSlots)     //do debounce check by checking the time between the last two slots is greater than specified min
-      validTimeBetweenSlots = timeBetweenSlots;    //as time between slots is ok, save it
+      validTimeBetweenSlots = timeBetweenSlots;    //as time between slots is ok, save it, otherwise ignore it
       
-//speed(mm/sec) = wheel diameter(mm) / (time between slots (millisec) * 100  / 1000) = wheel diameter * 10 / time between slots      
+/* speed(mm/sec) = wheel diameter(mm) / (time between slots (millisec) * 100  / 1000) = wheel diameter * 10 / time between slots  */     
   wheelSpeed_mmPerSec =  diskWheelCircum * 10 / validTimeBetweenSlots;
 
-    SENSOR_DEBUG_FILE("Function: ");
-    SENSOR_DEBUG_FILE(__FILE__);
-    SENSOR_DEBUG_FILE(",");
     SENSOR_DEBUG_PRINT(__FUNCTION__);
     SENSOR_DEBUG_PRINT(" timeBewtweenSlots: ");
     SENSOR_DEBUG_PRINT(timeBewtweenSlots);
@@ -66,7 +60,8 @@ void SlottedDisk::calculate_Speed(void)
   return;
 }
 
-
-
-
-
+//get speed of the wheel
+unsigned int SlottedDisk::get_Speed(void)     
+{
+  return wheelSpeed_mmPerSec;
+}

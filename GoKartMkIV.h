@@ -13,11 +13,9 @@
 #ifdef   DEBUG
 #define  DEBUG_PRINT(x)    Serial.print(x)
 #define  DEBUG_PRINTLN(x)  Serial.println(x)
-#define  DEBUG_FILE(x)
 #else
 #define  DEBUG_PRINT(x)
 #define  DEBUG_PRINTLN(x)
-#define  DEBUG_FILE(x)
 #endif
 
 /* define to run ISR diagnostics which attempt to determine the overhead of the ISR
@@ -46,11 +44,9 @@
 #ifdef   JOYSTICK_DEBUG
 #define  JOYSTICK_DEBUG_PRINT(x)    Serial.print(x)
 #define  JOYSTICK_DEBUG_PRINTLN(x)  Serial.println(x)
-#define  JOYSTICK_DEBUG_FILE(x)
 #else
 #define  JOYSTICK_DEBUG_PRINT(x)
 #define  JOYSTICK_DEBUG_PRINTLN(x)
-#define  JOYSTICK_DEBUG_FILE(x)
 #endif
 
 /* define to run joystick diagnostics for process joystick Y axis and print to the serial monitor
@@ -61,11 +57,9 @@
 #ifdef   JOYSTICK_PROCX_DEBUG
 #define  JOYSTICK_PROCX_DEBUG_PRINT(x)    Serial.print(x)
 #define  JOYSTICK_PROCX_DEBUG_PRINTLN(x)  Serial.println(x)
-#define  JOYSTICK_PROCX_DEBUG_FILE(x)
 #else
 #define  JOYSTICK_PROCX_DEBUG_PRINT(x)
 #define  JOYSTICK_PROCX_DEBUG_PRINTLN(x)
-#define  JOYSTICK_PROCX_DEBUG_FILE(x)
 #endif
 
 /* define to run joystick diagnostics which process joystick Y axis and print to the serial monitor
@@ -76,11 +70,9 @@
 #ifdef   JOYSTICK_PROCY_DEBUG
 #define  JOYSTICK_PROCY_DEBUG_PRINT(x)    Serial.print(x)
 #define  JOYSTICK_PROCY_DEBUG_PRINTLN(x)  Serial.println(x)
-#define  JOYSTICK_PROCY_DEBUG_FILE(x)
 #else
 #define  JOYSTICK_PROCY_DEBUG_PRINT(x)
 #define  JOYSTICK_PROCY_DEBUG_PRINTLN(x)
-#define  JOYSTICK_PROCY_DEBUG_FILE(x)
 #endif
 
 
@@ -112,11 +104,9 @@
 #ifdef   MOTOR_DEBUG
 #define  MOTOR_DEBUG_PRINT(x)    Serial.print(x)
 #define  MOTOR_DEBUG_PRINTLN(x)  Serial.println(x)
-#define  MOTOR_DEBUG_FILE(x)
 #else
 #define  MOTOR_DEBUG_PRINT(x)
 #define  MOTOR_DEBUG_PRINTLN(x)
-#define  MOTOR_DEBUG_FILE(x)
 #endif
 
 /* define to run sensor diagnostics which print to the serial monitor
@@ -127,11 +117,9 @@
 #ifdef   SENSOR_DEBUG
 #define  SENSOR_DEBUG_PRINT(x)    Serial.print(x)
 #define  SENSOR_DEBUG_PRINTLN(x)  Serial.println(x)
-#define  SENSOR_DEBUG_FILE(x)
 #else
 #define  SENSOR_DEBUG_PRINT(x)
 #define  SENSOR_DEBUG_PRINTLN(x)
-#define  SENSOR_DEBUG_FILE(x)
 #endif
 
 /* define to run main loop diagnostics which print to the serial monitor
@@ -142,17 +130,15 @@
 #ifdef   MAIN_LOOP_DEBUG
 #define  MAIN_LOOP_DEBUG_PRINT(x)    Serial.print(x)
 #define  MAIN_LOOP_DEBUG_PRINTLN(x)  Serial.println(x)
-#define  MAIN_LOOP_DEBUG_FILE(x)
 #else
 #define  MAIN_LOOP_DEBUG_PRINT(x)
 #define  MAIN_LOOP_DEBUG_PRINTLN(x)
-#define  MAIN_LOOP_DEBUG_FILE(x)
 #endif
 
 //system parameters
 /* Note the value of ValidTimeBetweenSlots is only valid for wheels 200mm diameter and larger, and speeds 20km/hr or slower */
-const int MaxSpeedKmh =  15;                                        //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots!!!
-const int MaxSpeedmmsec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec for 15km/hour 4,167mm/sec
+const unsigned int MaxSpeedKmh =  15;                                        //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots!!!
+const unsigned int MaxSpeedmmsec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec for 15km/hour 4,167mm/sec
 
 const int ReverseSpeedSlower = 2;  //Slow reverse speed compared to forward speed
 
@@ -162,8 +148,8 @@ const int ReverseSpeedSlower = 2;  //Slow reverse speed compared to forward spee
 #define RIGHT       0
 #define LEFT        1
 
-const int One_Sec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
-const int Qtr_Sec =  490;            //used in main loop to flash led show for a quarter of a second
+const unsigned int One_Sec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
+const unsigned int Qtr_Sec =  490;            //used in main loop to flash led show for a quarter of a second
 
 /* joystick Parameters */
 
@@ -185,13 +171,6 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 //    |  Low  |  Stopped  |    High    |
 //range  480      64           480
 
-
-/* LIMIT_TURNING is used to limit rate of turning to stop violent turns while going fast,
-  so the effective value of variable Speed_Reduction in main loop is made smaller because of increased range
-  eg in this case the variable Speed_Reduction is reduced by a factor of 4
-  eg const int LIMIT_TURNING = JoystickMax * 4;
-*/
-const int LIMIT_TURNING = JoystickMax * 1;      //at the moment no limiting of the turning rate
 //
 //                  Joystick Operation
 //         (orientation with cables at the bottom)
@@ -216,12 +195,10 @@ const int LIMIT_TURNING = JoystickMax * 1;      //at the moment no limiting of t
 /* note this is the normal version, change this if you want to change the speed of response of the system */
 const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
 const int  JoyStick_Max_ROC              = 48;   //limit rate of change allowable by the joystick (see comments above)
-const int  JoyStick_Fwd_Max_ROC          = 24;   //special limit rate of change for acceleration when travelling forward
 #else
-/* note this is the debug version, uses a slower scan rate to limit the amount of debug data diaplyed on the serial monitor window*/
+/* note this is the debug version, uses a slower scan rate to limit the amount of debug data displyed on the serial monitor window*/
 const unsigned long JoyStick_Scan_Rate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
 const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
-const int  JoyStick_Fwd_Max_ROC          = 12;   //special limit rate of change for acceleration when travelling forward
 #endif
 
 const int  noise_Mask                    = 0xFFF0; //clear bottom bits to mask any noise on signal

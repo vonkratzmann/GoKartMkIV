@@ -28,10 +28,7 @@ bool JoyStick::check_X_Axis (void)               //check joystick for any change
   {
     x_Chnged = true;                            //yes, set flag to say it has changed
 
-    JOYSTICK_DEBUG_FILE("Function: ");          // if joystick debug defined prints out position of joystick on serial monitor
-    JOYSTICK_DEBUG_FILE(__FILE__);
-    JOYSTICK_DEBUG_FILE(",");
-    JOYSTICK_DEBUG_PRINT(__FUNCTION__);
+    JOYSTICK_DEBUG_PRINT(__FUNCTION__);         // if joystick debug defined prints out position of joystick on serial monitor
     JOYSTICK_DEBUG_PRINT(" x_Cur: ");
     JOYSTICK_DEBUG_PRINT(x_Cur);
     JOYSTICK_DEBUG_PRINT(" ");
@@ -76,10 +73,7 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
   {
     y_Chnged = true;                             //yes, set flag to say it has changed
 
-    JOYSTICK_DEBUG_FILE("Function: ");          // if joystick debug defined prints out position of joystick on serial monitor
-    JOYSTICK_DEBUG_FILE(__FILE__);
-    JOYSTICK_DEBUG_FILE(",");
-    JOYSTICK_DEBUG_PRINT(__FUNCTION__);
+    JOYSTICK_DEBUG_PRINT(__FUNCTION__);          // if joystick debug defined prints out position of joystick on serial monitor
     JOYSTICK_DEBUG_PRINT(" y_Cur: ");
     JOYSTICK_DEBUG_PRINT(y_Cur);
     JOYSTICK_DEBUG_PRINT(" ");
@@ -117,9 +111,6 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
   {
     *new_Spd = 0;                                               //yes, stopped so update speed to say stopped, no need to set direction
 
-    JOYSTICK_PROCX_DEBUG_FILE("Function: ");
-    JOYSTICK_PROCX_DEBUG_FILE(__FILE__);
-    JOYSTICK_PROCX_DEBUG_FILE(",");
     JOYSTICK_PROCX_DEBUG_PRINT(__FUNCTION__);
     JOYSTICK_PROCX_DEBUG_PRINT("(stopped) ");
     JOYSTICK_PROCX_DEBUG_PRINT("new_Spd: ");
@@ -134,9 +125,6 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
       *new_Dir = LEFT;                                          //yes, moving to left
       *new_Spd = map(x_Cur, Stopped_Low - 1, 0, JoystickMin, JoystickMax); //Scale joystick position to speed range for motor
 
-      JOYSTICK_PROCX_DEBUG_FILE("Function: ");
-      JOYSTICK_PROCX_DEBUG_FILE(__FILE__);
-      JOYSTICK_PROCX_DEBUG_FILE(",");
       JOYSTICK_PROCX_DEBUG_PRINT(__FUNCTION__);
       JOYSTICK_PROCX_DEBUG_PRINT("(low) ");
       JOYSTICK_PROCX_DEBUG_PRINT("new_Spd: ");
@@ -150,9 +138,6 @@ void JoyStick::process_X(int *new_Spd, int *new_Dir)            //process change
       *new_Dir = RIGHT;
       *new_Spd = map(x_Cur, Stopped_High + 1, 1023, JoystickMin, JoystickMax); //Scale joystick position to speed range for motor
 
-      JOYSTICK_PROCX_DEBUG_FILE("Function: ");
-      JOYSTICK_PROCX_DEBUG_FILE(__FILE__);
-      JOYSTICK_PROCX_DEBUG_FILE(",");
       JOYSTICK_PROCX_DEBUG_PRINT(__FUNCTION__);
       JOYSTICK_PROCX_DEBUG_PRINT("(high) ");
       JOYSTICK_PROCX_DEBUG_PRINT("new_Spd: ");
@@ -175,9 +160,6 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
   {
     *new_Spd = 0;                                               //yes, stopped so update speed to say stopped, no need to set direction
 
-    JOYSTICK_PROCY_DEBUG_FILE("Function: ");
-    JOYSTICK_PROCY_DEBUG_FILE(__FILE__);
-    JOYSTICK_PROCY_DEBUG_FILE(",");
     JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__);
     JOYSTICK_PROCY_DEBUG_PRINT("(stopped) ");
     JOYSTICK_PROCY_DEBUG_PRINT("new_Spd: ");
@@ -197,9 +179,6 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
        */
       *new_Spd = map(y_Cur, Stopped_Low - 1, 0, JoystickMin, JoystickMax); 
 
-      JOYSTICK_PROCY_DEBUG_FILE("Function: ");
-      JOYSTICK_PROCY_DEBUG_FILE(__FILE__);
-      JOYSTICK_PROCY_DEBUG_FILE(",");
       JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__);
       JOYSTICK_PROCY_DEBUG_PRINT("(low) ");
       JOYSTICK_PROCY_DEBUG_PRINT("new_Spd: ");
@@ -218,10 +197,7 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
        */
       *new_Spd = map(y_Cur, Stopped_High + 1, 1023, JoystickMin, JoystickMax); 
 
-      JOYSTICK_PROCY_DEBUG_FILE("Function: ");
       JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__);
-      JOYSTICK_PROCY_DEBUG_FILE(",");
-      JOYSTICK_PROCY_DEBUG_FILE(__FILE__);
       JOYSTICK_PROCY_DEBUG_PRINT("(high) ");
       JOYSTICK_PROCY_DEBUG_PRINT("new_Spd: ");
       JOYSTICK_PROCY_DEBUG_PRINT(*new_Spd);

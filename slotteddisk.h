@@ -32,17 +32,17 @@ class SlottedDisk
     bool			sensorState;		        //stores if a slot is under the detector,
     bool      lastSensorState;        //stores previous state
     bool      debouncedState;         //stores deounced state
-    long      lastTimeChanged;        //store in millesconds, time when the sensor changed state
-    long      timeOfLastSlot1;        //time since last slot was under the sensor 
-    long      timeOfLastSlot2;        //time since second last slot was under the sensor 
-    int       wheelSpeed_mmPerSec;    //wheel speed in millmeters per second, use mm/sec units as provides appropiate size numbers to use a type integer, eg 15km/hr = 4,167mm/sec 
-    int       validTimeBetweenSlots;  //last valid time between slots
+    unsigned long      lastTimeChanged;        //store in millesconds, time when the sensor changed state
+    unsigned long      timeOfLastSlot1;        //time since last slot was under the sensor 
+    unsigned long      timeOfLastSlot2;        //time since second last slot was under the sensor 
+    unsigned int       wheelSpeed_mmPerSec;    //wheel speed in millmeters per second, use mm/sec units as provides appropiate size numbers to use a type integer, eg 15km/hr = 4,167mm/sec 
+    unsigned int       validTimeBetweenSlots;  //last valid time between slots
 
   public:
     SlottedDisk(uint8_t);	            //constructor
     void sensor_Check(void);          //check sensor for any changes and update sensor state
     void calculate_Speed(void);       //calculate speed of the wheel
-    int get_Speed(void);              //get speed of the wheel
+    unsigned int get_Speed(void);     //get speed of the wheel
    
 };
 #endif
