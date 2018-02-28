@@ -83,7 +83,7 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
    checks if its in stopped range, if yes sets turning percent to zero
    else checks requested direction and updates direction
 */
-void JoyStick::process_X(int *turningDegrees, int *new_Dir)            //process change for x axis of joystick
+void JoyStick::process_X(unsigned int *turningDegrees, bool *new_Dir)            //process change for x axis of joystick
 {
   if (x_Cur <= Stopped_High && x_Cur >= Stopped_Low)                   //check if in the stopped range
   {
@@ -112,7 +112,7 @@ void JoyStick::process_X(int *turningDegrees, int *new_Dir)            //process
    else checks requested direction and updates direction
    then scales the new speed bewteen the min and max speeds based on joystick position
 */
-void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change for Y axis of joystick
+void JoyStick::process_Y(unsigned int *new_Spd, bool *new_Dir)            //process change for Y axis of joystick
 {
   if (y_Cur <= Stopped_High && y_Cur >= Stopped_Low)            //check if in the stopped range
   {
@@ -133,9 +133,9 @@ void JoyStick::process_Y(int *new_Spd, int *new_Dir)            //process change
     }
     else                                                        //no, reversing
     {
-      *new_Dir = REVERSE;
+      *new_Dir = BACK;
       /* Scale joystick position to speed in millimeters per second
-          so that forward and reverse are scaled to the same range
+          so that forward and BACK are scaled to the same range
           overcomes issue where "0 to Stopped_Low" is different to "Stopped_High to 1023"
       */
       *new_Spd = map(y_Cur, Stopped_High + 1, 1023, 0, MaxSpeedmmPerSec);

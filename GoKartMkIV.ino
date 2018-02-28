@@ -68,9 +68,9 @@
 #include "slotteddisk.h"
 #include <PID_v1.h>
 
-unsigned int interrupt_Counter = 0;           //used in main loop to show the ISR is running
-
-unsigned long  joys_Time_Of_Last_Scan = 0;    //track when we last scanned for joystick changes
+unsigned int  interrupt_Counter = 0;           //used in main loop to show the ISR is running
+unsigned long joys_Time_Of_Last_Scan = 0;      //track when we last scanned for joystick changes
+unsigned int  goKartSpeed = 0;                 //stores speed of GoKart
 
 uint8_t led = LOW;                            //state of led, initially off
 
@@ -95,20 +95,13 @@ ISR(TIMER2_OVF_vect)
 }
 
 // PID Tuning parameters
-float leftKp = 1;   //Proportional Gain
-float leftKi = 2;   //Integral Gain
-float leftKd = 5;   //Differential Gain
-float rightKp = 1;  // Proportional Gain
-float rightKi = 2;  //Integral Gain
-float rightKd = 5;  //Differential Gain
-double leftSetpoint, leftInput, leftOutput;     //These are just variables for storing values
-double rightSetpoint, rightInput, rightOutput;  //These are just variables for storing values
+float Kp = 1;   //Proportional Gain
+float Ki = 2;   //Integral Gain
+float Kd = 5;   //Differential Gain
+double setpoint = 0, input = 0, output = 0;     //These are just variables for storing values, assume all stopped at startup
 
 /* define PID Loops, Input is our PV, Output is our u(t), Setpoint is our SP */
-PID myLeftPID(&leftInput, &leftOutput, &leftSetpoint, leftKp, leftKi, leftKd, P_ON_E, DIRECT);          //constructor also call set tunnings
-PID myRightPID(&rightInput, &rightOutput, &rightSetpoint, rightKp, rightKi, rightKd, DIRECT);
-
-
+PID myPID(&input, &output, &setpoint, Kp, Ki, Kd, P_ON_E, DIRECT);          //constructor also call set tunnings
 
 /** Setup */
 void setup(void)
@@ -155,16 +148,8 @@ void setup(void)
 
   sei();                                      //enable interrupts  */
   /* set up PID */
-  leftInput     = map((double) left_Motor.getCurrentSpeed(),   0, MaxSpeedmmPerSec, 0, MaxPower);  //Read current motor speed and change scale to analog out scale
-  rightInput    = map((double) right_Motor.getCurrentSpeed(),  0, MaxSpeedmmPerSec, 0, MaxPower);  //Read current motor speed and change scale to analog out scale
-  leftSetpoint  = map((double) left_Motor.getRequestedSpeed(), 0, MaxSpeedmmPerSec, 0, MaxPower);  //get setpoint from the motor
-  rightSetpoint = map((double) right_Motor.getRequestedSpeed(), 0, MaxSpeedmmPerSec, 0, MaxPower); //get setpoint from the motor
-
-  myLeftPID. SetSampleTime(JoyStickScanRate * JoystickToPidSampleTime);                              //set how often run PID as a multiple of JoystickScanRate, so PID run less often than rate scan joystick
-  myRightPID.SetSampleTime(JoyStickScanRate * JoystickToPidSampleTime);
-
-  myLeftPID.SetMode(AUTOMATIC);          //Turn on the PID loop for the left motor
-  myRightPID.SetMode(AUTOMATIC);         //Turn on the PID loop for the right motor
+  myPID. SetSampleTime(JoyStickScanRate * JoystickToPidSampleTime);                              //set how often run PID as a multiple of JoystickScanRate, so PID run less often than rate scan joystick
+  myPID.SetMode(AUTOMATIC);                 //Turn on the PID loop
 
   return;
 }  //  end of setup()
@@ -174,15 +159,16 @@ void setup(void)
 */
 void loop(void)
 {
-  if (mySlottedDisk.sensor_Check())         //check if a new slot under the disk
-    mySlottedDisk.calculate_Speed();        //yes, calculate wheel speed
-
   if (interrupt_Counter >= One_Sec )          //check if a second has expired
   {
     toggle_Led();                             //yes, flash the led
     reset_Counter();                          //reset counter
   }
-
+  if (mySlottedDisk.sensorCheck())         //check if a new slot under the disk
+  {
+    mySlottedDisk.calculateSpeed();        //yes, calculate wheel speed
+    goKartSpeed = mySlottedDisk.getSpeed(); //now get the speed
+  }
   /* check if time to scan joystick for changes to x and Y axis */
   if ((millis() - joys_Time_Of_Last_Scan) > JoyStickScanRate)
   {
@@ -194,46 +180,37 @@ void loop(void)
         then use x to increase or decrease the speed of the left or right wheels to enable turning;
         to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged */
 
-      int x_TurningDegrees;   //local variable to store new speed for x axis
-      int x_Dir = LEFT;       //local variable to store new direction
-      int y_Speed;            //local variable to store new speed for y axis
-      int y_Dir = FORWARD;    //local variable to store direction
-      int left_Speed;         //local variable to store speed of left wheel
-      int right_Speed;        //local varialbe to store speed of right wheel
+      unsigned int xTurningDegrees,  yReqSpeed;       //local variables for storing values
+      uint8_t leftPower, rightPower;                  //local variables for storing values
+      bool  xDir = LEFT,  yDir = FORWARD;             //local variables for storing values
 
-      js.process_Y(&y_Speed, &y_Dir);           //get speed and direction for y axis
-      if (y_Dir == REVERSE)                     //chek if direction is reverse
-        y_Speed = y_Speed / ReverseSpeedSlower; //yes, slow down reverse speed as a safety measure
+      js.process_Y(&yReqSpeed, &yDir);                //get requested speed and direction for y axis
+      if (yDir == BACK)                               //check if direction is BACK or reverse
+        yReqSpeed = yReqSpeed / ReverseSpeedSlower;   //yes, slow down reverse speed as a safety measure
 
-      left_Speed     = y_Speed;                 //initialise speeds, set left and righ to same, ie moving straight, not turning
-      right_Speed    = y_Speed;
+      js.process_X(&xTurningDegrees, &xDir);          //get position of x axis?
 
-      js.process_X(&x_TurningDegrees, &x_Dir);                    //get position of x axis?
-      if (x_TurningDegrees != 0 && x_Dir == LEFT)                 //is it a request to turn and the request is to the left
-        left_Speed = map( x_TurningDegrees, 90, 0, 0, y_Speed);   //slow left wheel speed, by the amount of turning degrees, & leave right wheel unchanged
-      else if (x_TurningDegrees != 0 && x_Dir == RIGHT)           //no, must be request to move right, slow right wheel & leave left wheel unchanged
-        right_Speed = map( x_TurningDegrees, 90, 0, 0, y_Speed);  //slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
+      MAIN_LOOP_DEBUG_PRINT(__FUNCTION__, " xTurningDegrees: ", xTurningDegrees, " xDir: ", xDir, " yReqSpeed: ", yReqSpeed, " yDir: ", yDir);   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
 
-      left_Motor.setRequestedSpeed(left_Speed);     //set new speed requested from joystick
-      left_Motor.set_Requested_Dir(y_Dir);          //set new direction requested from joystick, use Y as it determines forwards or backwards direction
-      right_Motor.setRequestedSpeed(right_Speed);   //set new speed requested from joystick
-      right_Motor.set_Requested_Dir(y_Dir);         //set new direction requested from joystick, use Y as it determines forwards or backwards direction
+      input     = map((double) goKartSpeed, 0, MaxSpeedmmPerSec, 0, MaxPower);     //Get current goKart speed and change the scale to the PWM power output scale
+      setpoint  = map((double) yReqSpeed,   0, MaxSpeedmmPerSec, 0, MaxPower);     //get setpoint requested by the joystick and change the scale to the PWM power output scale
 
-      MAIN_LOOP_DEBUG_PRINT(__FUNCTION__, " x_TurningDegrees: ", x_TurningDegrees, " left_Speed: ", left_Speed, " right_Speed: ", right_Speed);   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
-
-      leftInput     = map((double) left_Motor.getCurrentSpeed(),    0, MaxSpeedmmPerSec, 0, MaxPower);     //Read current motor speed and change scale to analog out scale
-      rightInput    = map((double) right_Motor.getCurrentSpeed(),   0, MaxSpeedmmPerSec, 0, MaxPower);     //Read current motor speed and change scale to analog out scale
-      leftSetpoint  = map((double) left_Motor.getRequestedSpeed(),  0, MaxSpeedmmPerSec, 0, MaxPower);     //get setpoint from the motor
-      rightSetpoint = map((double) right_Motor.getRequestedSpeed(), 0, MaxSpeedmmPerSec, 0, MaxPower);     //get setpoint from the motor
-
-      /* Run the PID loop, the PID compute function has the addresses of leftInput, leftSetput, and leftOutput variables so updated from the compute function */
-      if (myLeftPID.Compute() ||  myRightPID.Compute())        //Run the PID loops, and check something has changed,
+      /* Run the PID loop, the PID compute function has the addresses of Input, Setput, and Output variables so updated from the compute function
+      */
+      if (myPID.Compute())                                              //Run the PID loop, and check something has changed,
       {
-        /* yes, now have the output from the PID, update power and direction for the motors */
-        left_Motor.updatePowerToMotor(leftOutput);     //update motor speed from the requested speed
-        left_Motor.updateDir();                        //update motor direction from the requested direction
-        right_Motor.updatePowerToMotor(rightOutput);   //update motor speed from the requested speed
-        right_Motor.updateDir();                       //update  motor direction from the requested direction
+        leftPower = rightPower = output;                                //yes, now have the output from the PID, update power to each wheel and take account of turn request from x axis
+        if (xTurningDegrees != 0 && xDir == LEFT)                       //is it a request to turn and the request is to the left
+          leftPower = map( xTurningDegrees, 90, 0, 0, output);          //yes, slow left wheel, by reducing the power by the amount of turning degrees, & leave right wheel unchanged
+        else if (xTurningDegrees != 0 && xDir == RIGHT)                 //no, must be request to move right
+          rightPower = map( xTurningDegrees, 90, 0, 0, output);         //slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
+          
+        MAIN_LOOP_DEBUG_PRINT("input: ", input, " setpoint: ", setpoint, " output: ", output, leftPower, " ", rightPower);   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
+        
+        left_Motor.updatePower(leftPower);            //update motor power from the PID output after taking into account turning
+        left_Motor.updateDir(yDir);                   //update motor direction from the y axis as it determines forwards or backwards
+        right_Motor.updatePower(rightPower);          //update motor speed from the requested speed after taking into account turning
+        right_Motor.updateDir(yDir);                  //update  motor direction from the y axis as it determines forwards or backwards
       }
     }
   }

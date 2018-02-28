@@ -13,90 +13,56 @@
 
 Motor::Motor(uint8_t* par_pwm_reg, uint8_t par_direction_pin, uint8_t par_pwm_pin)
 {
-  currentSpeed   = 0;                   //set initial speed
-  requestedSpeed = 0;                   //set initial speed
-  requestedDir   = FORWARD;             //set initial direction
-  currentDir     = FORWARD;             //set initial direction
+  myPower   = 0;                          //set initial speed
+  myDir     = FORWARD;                    //set initial direction
 
   dir_Pin = par_direction_pin;          //store pin to be used to set the direction
   pwm_Reg = par_pwm_reg;                //store reg to be used to control speed via PWM signa
 
   pinMode(par_pwm_pin, OUTPUT);         //set PWM pin as an output
   pinMode(dir_Pin, OUTPUT);             //sets the direction pin as output
-  digitalWrite(dir_Pin, currentDir);    //sets the initial direction
+  digitalWrite(dir_Pin, myDir);         //sets the initial direction
 }
 
-/* setRequestedtSpeed
-   stores the new requested speed
-   it is up to other logical routines to change the actual speed
+
+/* getPower
+   retrurns the current power
 */
-void  Motor::setRequestedSpeed(int par_new_speed)
+uint8_t Motor::getPower(void)
 {
-  requestedSpeed = par_new_speed;
-  MOTOR_DEBUG_PRINT(__FUNCTION__, " requestedSpeed: ", MOTOR_DEBUG_PRINT(requestedSpeed) );
+  return myPower;
 }
 
-/* getRequestedtSpeed
-   retrurns the requested speed, not speed the motor is actually doing
+
+/* getDir
+   returns the the direction of the motor
 */
-int Motor::getRequestedSpeed(void)
+bool Motor::getDir(void)
 {
-  return requestedSpeed;
+  return myDir;
 }
 
-/* set_Requested_Dir
-   stores the requested direction
-   it is up to other logical routines to change the actual speed and direction
-*/
-void  Motor::set_Requested_Dir(int par_new_direction)
-{
-  requestedDir = par_new_direction;
-  MOTOR_DEBUG_PRINT(__FUNCTION__, " requestedDir: ", requestedDir );
-}
 
-/* getRequestedtDir
-   returns the the requested direction of the motor
-*/
-int Motor::getRequestedDir(void)
-{
-  return requestedDir;
-}
-
-/* getRequestedtSpeed
-  returns the current speed, the speed the motor is actually doing
-*/
-int Motor::getCurrentSpeed(void)
-{
-  return currentSpeed;
-}
-
-/* getRequestedtDir
-   returns the the current direction of the motor
-*/
-int Motor::getCurrentDir(void)
-{
-  return currentDir;
-}
-
-/* updatePowerToMotor
+/* updatePower
    updates the current powerto the motor by wrtiing to PWM register
 */
-void Motor::updatePowerToMotor(uint8_t power)
+void Motor::updatePower(uint8_t power)
 {
-  MOTOR_DEBUG_PRINT(__FUNCTION__, " currentSpeed: ", currentSpeed);
-  MOTOR_DEBUG_PRINT(__FUNCTION__, " requestedSpeed: ", requestedSpeed);
-  MOTOR_DEBUG_PRINT(__FUNCTION__, " power: ", power);
+  MOTOR_DEBUG_PRINT(__FUNCTION__, " myPower: ", myPower);
+  MOTOR_DEBUG_PRINT(__FUNCTION__, " myDir: ", myDir);
 
-  * pwm_Reg = power;                 //output power to update PWM duty cycle
+  myPower = power;
+  * pwm_Reg = myPower;                 //output power to update PWM duty cycle
 }
+
 
 /* updateDir
    updates the current direction from the requested direction
    does not check if speed is appropriate to change direction
 */
-void    Motor::updateDir(void)
+void    Motor::updateDir(bool dir)
 {
-  currentDir = requestedDir;
-  digitalWrite(dir_Pin, currentDir);
+  myDir = dir;
+  digitalWrite(dir_Pin, myDir);
 }
 

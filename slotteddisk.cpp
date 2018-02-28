@@ -18,7 +18,7 @@ SlottedDisk::SlottedDisk(uint8_t parSensorDin)
 
 //check sensor for any changes and update sensor state
 //return true if new slot under the sensor
-bool SlottedDisk::sensor_Check(void)
+bool SlottedDisk::sensorCheck(void)
 {
   bool changeDetected = false;            //clear flag
   sensorState = digitalRead(sensorDin);   //read sensor to see if there has been a change
@@ -43,7 +43,7 @@ bool SlottedDisk::sensor_Check(void)
 }
 
 //calculate speed of the wheel
-void SlottedDisk::calculate_Speed(void)
+void SlottedDisk::calculateSpeed(void)
 {
   int timeBetweenSlots = timeOfLastSlot1 - timeOfLastSlot2;
   if (timeBetweenSlots >= minTimeBetweenSlots)     //do debounce check by checking the time between the last two slots is greater than specified min
@@ -56,7 +56,7 @@ void SlottedDisk::calculate_Speed(void)
 }
 
 //get speed of the wheel
-unsigned int SlottedDisk::get_Speed(void)
+unsigned int SlottedDisk::getSpeed(void)
 {
   return wheelSpeed_mmPerSec;
 }

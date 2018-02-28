@@ -11,7 +11,7 @@
 //#define  JOYSTICK_DEBUG
 
 #ifdef   JOYSTICK_DEBUG
-#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c), Serial.println(d)
+#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.println(d)
 #else
 #define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b, c, d)
 #endif
@@ -38,7 +38,6 @@
 #else
 #define  JOYSTICK_PROCY_DEBUG_PRINT(x, y, z, a, b, c)
 #endif
-
 
 /* define to run joystick diagnostics with a slow scan rate
   comment out before code is released
@@ -74,7 +73,7 @@
 //#define  SENSOR_DEBUG
 
 #ifdef   SENSOR_DEBUG
-#define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c), Serial.println(d)
+#define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.println(d)
 #else
 #define  SENSOR_DEBUG_PRINT(x, y, z, a, b)
 #endif
@@ -85,9 +84,9 @@
 //#define  MAIN_LOOP_DEBUG
 
 #ifdef   MAIN_LOOP_DEBUG
-#define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c), Serial.println(d)
+#define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e); Serial.println(f)
 #else
-#define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d)
+#define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)
 #endif
 
 //system parameters
@@ -98,10 +97,10 @@ const uint8_t      MaxPower         = 255;                                      
 const int          ReverseSpeedSlower = 2;                                      //Slow reverse speed compared to forward speed
 
 /* set up directions for motors */
-#define FORWARD     0
-#define REVERSE     1
-#define RIGHT       0
-#define LEFT        1
+#define FORWARD     true
+#define BACK        false
+#define RIGHT       true
+#define LEFT        false
 
 const unsigned int One_Sec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
 const unsigned int Qtr_Sec =  490;            //used in main loop to flash led show for a quarter of a second
@@ -136,7 +135,7 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 //   (Dir 0) Left <-     JoyStick   -> Right(dir 1)
 //      0                               1023
 //
-//                     Reverse   (dir 0)
+//                     Back   (dir 0)
 //                        1023
 /*
    Combination of scan rate and maximum Rate of Change (ROC) limit speed of response of system
@@ -156,7 +155,7 @@ const unsigned long JoyStickScanRate   = 200;   //scan every 200 ms or 1/5 of a 
 const int  JoyStick_Max_ROC            = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
 
-const int JoystickToPidSampleTime       = 5;      //set ratio of when joystick is sampled to when PID is computed, should not be less than 1
+const int JoystickToPidSampleTime       = 1;      //set ratio of when joystick is sampled to when PID is computed, should not be less than 1
 
 const int  Noise_Mask                   = 0xFFF0; //clear bottom bits to mask any noise on signal
 
