@@ -23,14 +23,14 @@ class Motor
 
   public:
     Motor(uint8_t*, uint8_t, uint8_t);	            //constructor, set PWM comparision register address, direction pin, and maximum speed for the motor
-    void	set_Requested_Speed(int);
-    int	  get_Requested_Speed(void);
+    void	setRequestedSpeed(int);
+    int	  getRequestedSpeed(void);
     void	set_Requested_Dir(int);
-    int  	get_Requested_Dir(void);
-    int   get_Current_Speed();
-    int   get_Current_Dir(void);
-    void  update_Speed(void);
-    void  update_Dir(void);
+    int  	getRequestedDir(void);
+    int   getCurrentSpeed();
+    int   getCurrentDir(void);
+    void  updatePowerToMotor(uint8_t);
+    void  updateDir(void);
 };
 
 #endif

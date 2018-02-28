@@ -5,48 +5,15 @@
 
 #include "arduino.h"
 
-/* define to run diagnostics which print to the serial monitor
-  comment out before code is released
-*/
-//#define  DEBUG
-
-#ifdef   DEBUG
-#define  DEBUG_PRINT(x)    Serial.print(x)
-#define  DEBUG_PRINTLN(x)  Serial.println(x)
-#else
-#define  DEBUG_PRINT(x)
-#define  DEBUG_PRINTLN(x)
-#endif
-
-/* define to run ISR diagnostics which attempt to determine the overhead of the ISR
-   and print out te results in the main loop
-  comment out before code is released
-*/
-//#define  ISR_DEBUG
-
-#ifdef   ISR_DEBUG
-#define  ISR_DEBUG_ENTRY      entry_Time=micros();
-#define  ISR_DEBUG_EXIT       exit_Time=micros();
-#define  ISR_DEBUG_PRINT(x)   Serial.print(x)
-#define  ISR_DEBUG_PRINTLN(x) Serial.println(x)
-#else
-#define  ISR_DEBUG_ENTRY
-#define  ISR_DEBUG_EXIT
-#define  ISR_DEBUG_PRINT(x)
-#define  ISR_DEBUG_PRINTLN(x) Serial.println(x)
-#endif
-
 /* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
 //#define  JOYSTICK_DEBUG
 
 #ifdef   JOYSTICK_DEBUG
-#define  JOYSTICK_DEBUG_PRINT(x)    Serial.print(x)
-#define  JOYSTICK_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c), Serial.println(d)
 #else
-#define  JOYSTICK_DEBUG_PRINT(x)
-#define  JOYSTICK_DEBUG_PRINTLN(x)
+#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b, c, d)
 #endif
 
 /* define to run joystick diagnostics for process joystick Y axis and print to the serial monitor
@@ -55,11 +22,10 @@
 //#define  JOYSTICK_PROCX_DEBUG
 
 #ifdef   JOYSTICK_PROCX_DEBUG
-#define  JOYSTICK_PROCX_DEBUG_PRINT(x)    Serial.print(x)
-#define  JOYSTICK_PROCX_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  JOYSTICK_PROCX_DEBUG_PRINT(x, y, z, a, b, c)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.println(c)
+
 #else
-#define  JOYSTICK_PROCX_DEBUG_PRINT(x)
-#define  JOYSTICK_PROCX_DEBUG_PRINTLN(x)
+#define  JOYSTICK_PROCX_DEBUG_PRINT(x, y, z, a, b, c)
 #endif
 
 /* define to run joystick diagnostics which process joystick Y axis and print to the serial monitor
@@ -68,24 +34,20 @@
 //#define  JOYSTICK_PROCY_DEBUG
 
 #ifdef   JOYSTICK_PROCY_DEBUG
-#define  JOYSTICK_PROCY_DEBUG_PRINT(x)    Serial.print(x)
-#define  JOYSTICK_PROCY_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  JOYSTICK_PROCY_DEBUG_PRINT(x, y, z, a, b, c)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.println(c)
 #else
-#define  JOYSTICK_PROCY_DEBUG_PRINT(x)
-#define  JOYSTICK_PROCY_DEBUG_PRINTLN(x)
+#define  JOYSTICK_PROCY_DEBUG_PRINT(x, y, z, a, b, c)
 #endif
 
 
 /* define to run joystick diagnostics with a slow scan rate
   comment out before code is released
 */
-
 //#define JOYSTICK_DEBUG_SCAN
 
 /* define to run joystick diagnostics which force a value from the joystick
   comment out before code is released
 */
-
 //#define  JOYSTICK_FORCEDEBUG
 
 #ifdef   JOYSTICK_FORCEDEBUG
@@ -100,13 +62,10 @@
   comment out before code is released
 */
 //#define  MOTOR_DEBUG
-
 #ifdef   MOTOR_DEBUG
-#define  MOTOR_DEBUG_PRINT(x)    Serial.print(x)
-#define  MOTOR_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  MOTOR_DEBUG_PRINT(x, y, z,)    Serial.print(x);  Serial.print(y);  Serial.println(z)
 #else
-#define  MOTOR_DEBUG_PRINT(x)
-#define  MOTOR_DEBUG_PRINTLN(x)
+#define  MOTOR_DEBUG_PRINT(x, y, z)
 #endif
 
 /* define to run sensor diagnostics which print to the serial monitor
@@ -115,11 +74,9 @@
 //#define  SENSOR_DEBUG
 
 #ifdef   SENSOR_DEBUG
-#define  SENSOR_DEBUG_PRINT(x)    Serial.print(x)
-#define  SENSOR_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c), Serial.println(d)
 #else
-#define  SENSOR_DEBUG_PRINT(x)
-#define  SENSOR_DEBUG_PRINTLN(x)
+#define  SENSOR_DEBUG_PRINT(x, y, z, a, b)
 #endif
 
 /* define to run main loop diagnostics which print to the serial monitor
@@ -128,19 +85,17 @@
 //#define  MAIN_LOOP_DEBUG
 
 #ifdef   MAIN_LOOP_DEBUG
-#define  MAIN_LOOP_DEBUG_PRINT(x)    Serial.print(x)
-#define  MAIN_LOOP_DEBUG_PRINTLN(x)  Serial.println(x)
+#define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c), Serial.println(d)
 #else
-#define  MAIN_LOOP_DEBUG_PRINT(x)
-#define  MAIN_LOOP_DEBUG_PRINTLN(x)
+#define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d)
 #endif
 
 //system parameters
 /* Note the value of ValidTimeBetweenSlots is only valid for wheels 200mm diameter and larger, and speeds 20km/hr or slower */
-const unsigned int MaxSpeedKmh =  15;                                        //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots!!!
-const unsigned int MaxSpeedmmsec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec for 15km/hour 4,167mm/sec
-
-const int ReverseSpeedSlower = 2;  //Slow reverse speed compared to forward speed
+const unsigned int MaxSpeedKmh      =  15;                                      //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots!!!
+const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec for 15km/hour 4,167mm/sec
+const uint8_t      MaxPower         = 255;                                      //255 gives 100% duty cycle to the PWM, ie max power
+const int          ReverseSpeedSlower = 2;                                      //Slow reverse speed compared to forward speed
 
 /* set up directions for motors */
 #define FORWARD     0
@@ -193,15 +148,17 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 
 #ifndef   JOYSTICK_DEBUG_SCAN
 /* note this is the normal version, change this if you want to change the speed of response of the system */
-const unsigned long JoyStick_Scan_Rate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
-const int  JoyStick_Max_ROC              = 48;   //limit rate of change allowable by the joystick (see comments above)
+const unsigned long JoyStickScanRate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
+const int           JoyStick_Max_ROC   = 48;   //limit rate of change allowable by the joystick (see comments above)
 #else
 /* note this is the debug version, uses a slower scan rate to limit the amount of debug data displyed on the serial monitor window*/
-const unsigned long JoyStick_Scan_Rate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
-const int  JoyStick_Max_ROC              = 48;    //limit rate of change allowable by the joystick (see comments above)
+const unsigned long JoyStickScanRate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
+const int  JoyStick_Max_ROC            = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
 
-const int  noise_Mask                    = 0xFFF0; //clear bottom bits to mask any noise on signal
+const int JoystickToPidSampleTime       = 5;      //set ratio of when joystick is sampled to when PID is computed, should not be less than 1
+
+const int  Noise_Mask                   = 0xFFF0; //clear bottom bits to mask any noise on signal
 
 /* ADC I/O for Joystick*/
 const uint8_t Xaxis_JoystickAnalogPin     = 1;    //x axis of joystick
@@ -210,12 +167,14 @@ const uint8_t Yaxis_JoystickAnalogPin     = 0;    //y xis of joystick
 /** motors
    define i/o for each motor driver board, each board has 2 inputs: direction & pwm
 */
+uint8_t* const leftPwmReg    = (uint8_t *)0xB3;       // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
+uint8_t* const rightPwmReg   = (uint8_t *)0xB4;       // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
 
-const uint8_t  left_Dir_Pin	  = 10;         //wired to the motor driver board to set the direction the motor turns
-const uint8_t  left_Pwm_Pin	  = 11;         //PWM pulse to set the speed of the motor, this is ATmega PB3 OC2A, UNO pin 11
+const uint8_t  leftDirPin	  = 10;         //wired to the motor driver board to set the direction the motor turns
+const uint8_t  leftPwmPin	  = 11;         //PWM pulse to set the speed of the motor, this is ATmega PB3 OC2A, UNO pin 11
 
-const uint8_t  right_Dir_Pin  = 2;          //wired to the motor driver board to set the direction the motor turns
-const uint8_t  right_Pwm_Pin	= 3;          //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
+const uint8_t  rightDirPin  = 2;          //wired to the motor driver board to set the direction the motor turns
+const uint8_t  rightPwmPin	= 3;          //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
 
 /* define i/O for led */
 const uint8_t LedPin          =  13; //LED connected to digital pin 13
@@ -223,6 +182,6 @@ const uint8_t LedPin          =  13; //LED connected to digital pin 13
 /* define i/O for slotted wheel
   used to determine speed of goKart
 */
-const uint8_t Sensor_WheelPin =  5; //Slotted wheel sensor connected to digital pin 5
+const uint8_t SensorDiskPin =  5; //Slotted disk sensor connected to digital pin 5
 
 #endif

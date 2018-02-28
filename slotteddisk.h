@@ -40,7 +40,7 @@ class SlottedDisk
 
   public:
     SlottedDisk(uint8_t);	            //constructor
-    void sensor_Check(void);          //check sensor for any changes and update sensor state
+    bool sensor_Check(void);          //check sensor for any changes and update sensor state
     void calculate_Speed(void);       //calculate speed of the wheel
     unsigned int get_Speed(void);     //get speed of the wheel
    
