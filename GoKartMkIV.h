@@ -8,12 +8,12 @@
 /* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
-//#define  JOYSTICK_DEBUG
+#define  JOYSTICK_DEBUG
 
 #ifdef   JOYSTICK_DEBUG
-#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.println(d)
+#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.println(b)
 #else
-#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b, c, d)
+#define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)
 #endif
 
 /* define to run joystick diagnostics for process joystick Y axis and print to the serial monitor
@@ -62,7 +62,7 @@
 */
 //#define  MOTOR_DEBUG
 #ifdef   MOTOR_DEBUG
-#define  MOTOR_DEBUG_PRINT(x, y, z,)    Serial.print(x);  Serial.print(y);  Serial.println(z)
+#define  MOTOR_DEBUG_PRINT(x, y, z)    Serial.print(x);  Serial.print(y);  Serial.println(z)
 #else
 #define  MOTOR_DEBUG_PRINT(x, y, z)
 #endif
@@ -70,10 +70,10 @@
 /* define to run sensor diagnostics which print to the serial monitor
   comment out before code is released
 */
-//#define  SENSOR_DEBUG
+#define  SENSOR_DEBUG
 
 #ifdef   SENSOR_DEBUG
-#define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.println(d)
+#define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.println(b)
 #else
 #define  SENSOR_DEBUG_PRINT(x, y, z, a, b)
 #endif
@@ -81,7 +81,7 @@
 /* define to run main loop diagnostics which print to the serial monitor
   comment out before code is released
 */
-//#define  MAIN_LOOP_DEBUG
+#define  MAIN_LOOP_DEBUG
 
 #ifdef   MAIN_LOOP_DEBUG
 #define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e); Serial.println(f)
@@ -91,8 +91,8 @@
 
 //system parameters
 /* Note the value of ValidTimeBetweenSlots is only valid for wheels 200mm diameter and larger, and speeds 20km/hr or slower */
-const unsigned int MaxSpeedKmh      =  15;                                      //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots!!!
-const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000 * 1000 / 3600;         //maximum speed in mm/sec for 15km/hour 4,167mm/sec
+const unsigned int MaxSpeedKmh      =  15;                                      //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots
+const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec for 15km/hour 4,167mm/sec (had 1000 * 1000 / 3600 but gave the wrong number)
 const uint8_t      MaxPower         = 255;                                      //255 gives 100% duty cycle to the PWM, ie max power
 const int          ReverseSpeedSlower = 2;                                      //Slow reverse speed compared to forward speed
 

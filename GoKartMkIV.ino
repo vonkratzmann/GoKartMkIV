@@ -190,22 +190,20 @@ void loop(void)
 
       js.process_X(&xTurningDegrees, &xDir);          //get position of x axis?
 
-      MAIN_LOOP_DEBUG_PRINT(__FUNCTION__, " xTurningDegrees: ", xTurningDegrees, " xDir: ", xDir, " yReqSpeed: ", yReqSpeed, " yDir: ", yDir);   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
+      MAIN_LOOP_DEBUG_PRINT(__FUNCTION__, " xTurningDegrees:", xTurningDegrees, " xDir:", xDir, " yReqSpeed:", yReqSpeed, " yDir:", yDir);   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
 
       input     = map((double) goKartSpeed, 0, MaxSpeedmmPerSec, 0, MaxPower);     //Get current goKart speed and change the scale to the PWM power output scale
       setpoint  = map((double) yReqSpeed,   0, MaxSpeedmmPerSec, 0, MaxPower);     //get setpoint requested by the joystick and change the scale to the PWM power output scale
 
-      /* Run the PID loop, the PID compute function has the addresses of Input, Setput, and Output variables so updated from the compute function
-      */
-      if (myPID.Compute())                                              //Run the PID loop, and check something has changed,
+      if (myPID.Compute())                                              //Run the PID loop, and check something has changed, PID function has the addresses of Input, Setput, and Output variables so updated from the compute function
       {
-        leftPower = rightPower = output;                                //yes, now have the output from the PID, update power to each wheel and take account of turn request from x axis
+        leftPower = (uint8_t) output; rightPower = (uint8_t) output;    //yes, now have the output from the PID, update power to each wheel taking account of turn request from the x axis
         if (xTurningDegrees != 0 && xDir == LEFT)                       //is it a request to turn and the request is to the left
           leftPower = map( xTurningDegrees, 90, 0, 0, output);          //yes, slow left wheel, by reducing the power by the amount of turning degrees, & leave right wheel unchanged
         else if (xTurningDegrees != 0 && xDir == RIGHT)                 //no, must be request to move right
           rightPower = map( xTurningDegrees, 90, 0, 0, output);         //slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
           
-        MAIN_LOOP_DEBUG_PRINT("input: ", input, " setpoint: ", setpoint, " output: ", output, leftPower, " ", rightPower);   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
+        MAIN_LOOP_DEBUG_PRINT("     input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " ");   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
         
         left_Motor.updatePower(leftPower);            //update motor power from the PID output after taking into account turning
         left_Motor.updateDir(yDir);                   //update motor direction from the y axis as it determines forwards or backwards
