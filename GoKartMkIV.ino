@@ -94,6 +94,29 @@ ISR(TIMER2_OVF_vect)
   return;
 }
 
+/*
+   Slot detector ISR
+   when a slot is under the sensor, the signal is high
+*/
+
+ISR(INT0_vect)
+{
+  if (digitalRead(SensorDiskPin))                       //is it a LOW to HIGH pin change?
+  {
+    mySlottedDisk.timeSinceStartSlot = millis();        //yes, save time of low to high change
+    mySlottedDisk.validSlotUnderSensor = false;        //clear flag to say we have had a valid slot detected pulse
+  }
+  else
+  {
+    unsigned long tmp = millis();                                    //no, it is a HIGH to LOW pin change
+    if (tmp - mySlottedDisk.timeSinceStartSlot > slotDebounceTime)   //check if time pulse was high was greater than debounce period
+    {
+      mySlottedDisk.validSlotUnderSensor = true;                                //yes, we've just had a valid slot pulse
+      mySlottedDisk.timeBetweenSlots = tmp - mySlottedDisk.timeSinceStartSlot;  //work out time bewteen slots
+    }
+  }
+  return;
+}
 // PID Tuning parameters
 float Kp = 1;   //Proportional Gain
 float Ki = 2;   //Integral Gain
@@ -112,9 +135,8 @@ void setup(void)
 
   Serial.begin(9600);             //set up serial port for any debug prints
 
-  /* Set up timer interrupt */
-
-  /* Timer 0, is 8 bits used by fuction millis();
+  /* Set up timer interrupt
+    Timer 0, is 8 bits used by fuction millis();
     Timer 2, is 8 bits and is used to generate an interrupt approximately every 500 microseconds and to process pwm pulses to motors
     Timer is 16x10^6 (clock speed) / [prescaler x 255];  for prescaler of 32, frequeny of interrupts and PWM is 1.960kHz
     Use fast PWM mode, where the timer repeatedly counts from 0 to 255. The output turns on when the timer is at 0, and turns off when the timer matches the output compare register OCR2A and OCR2B.
@@ -146,6 +168,15 @@ void setup(void)
   /* On TIMSK2, setting the TOIE2 bits to 1 enables the Timer/Counter2 Overflow interrupt. */
   TIMSK2 = _BV(TOIE2);
 
+  /* Set up digital input interrupts for the slotted disk input
+    uses digital pin 5, this is ATmega PD5 PCINT21 OC0B/T1
+  */
+
+  pinMode(SensorDiskPin, INPUT);       // equivalent to DDRD  &= ~(1 << DDD5)clear the PD5 pin, so PD5 is now an input
+//  digitalWrite(SensorDiskPin, HIGH);   //turn on pullup register
+  EICRA  |= (1 << ISC00);              //set to trigger on any logic change
+  EIMSK  |= (1 << INT0);               //enable interrupts on INT0
+
   sei();                                      //enable interrupts  */
   /* set up PID */
   myPID. SetSampleTime(JoyStickScanRate * JoystickToPidSampleTime);                              //set how often run PID as a multiple of JoystickScanRate, so PID run less often than rate scan joystick
@@ -161,7 +192,7 @@ void loop(void)
 {
   if (interrupt_Counter >= One_Sec )          //check if a second has expired
   {
-    toggle_Led();                             //yes, flash the led
+    toggleLed();                              //yes, flash the led
     reset_Counter();                          //reset counter
   }
   if (mySlottedDisk.sensorCheck())         //check if a new slot under the disk
@@ -202,9 +233,9 @@ void loop(void)
           leftPower = map( xTurningDegrees, 90, 0, 0, output);          //yes, slow left wheel, by reducing the power by the amount of turning degrees, & leave right wheel unchanged
         else if (xTurningDegrees != 0 && xDir == RIGHT)                 //no, must be request to move right
           rightPower = map( xTurningDegrees, 90, 0, 0, output);         //slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
-          
+
         MAIN_LOOP_DEBUG_PRINT("     input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " ");   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
-        
+
         left_Motor.updatePower(leftPower);            //update motor power from the PID output after taking into account turning
         left_Motor.updateDir(yDir);                   //update motor direction from the y axis as it determines forwards or backwards
         right_Motor.updatePower(rightPower);          //update motor speed from the requested speed after taking into account turning
@@ -216,7 +247,7 @@ void loop(void)
 //end of loop()
 //-------------------------------------
 
-void toggle_Led(void)
+void toggleLed(void)
 {
   led ? led = LOW : led = HIGH;              //swap led state from high to low or low to high
   digitalWrite(LedPin, led);                 //update the led

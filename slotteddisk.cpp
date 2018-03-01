@@ -7,13 +7,12 @@
 */
 
 /* SlottedDisk constructor
-  setup sensor read pin,
+   the configuration of the pin and interrupt is done in Setup() while setting up the interrupts
 */
 
 SlottedDisk::SlottedDisk(uint8_t parSensorDin)
 {
   sensorDin = parSensorDin;           //store digital input to read the
-  pinMode(sensorDin, INPUT);          //set digital input as an input
 }
 
 //check sensor for any changes and update sensor state
@@ -21,26 +20,18 @@ SlottedDisk::SlottedDisk(uint8_t parSensorDin)
 bool SlottedDisk::sensorCheck(void)
 {
   bool changeDetected = false;            //clear flag
-  sensorState = digitalRead(sensorDin);   //read sensor to see if there has been a change
-  unsigned long tmp = millis();           //get current time
-  if (sensorState != lastSensorState)     //is there change?
+  cli();
+  bool tmp = validSlotUnderSensor;
+  sei();
+  if (validSlotUnderSensor)              //is there a new valid slot been detected?
   {
-    SENSOR_DEBUG_PRINT(__FUNCTION__, " sensorState != lastSensorState ", " ", " sensorState:", sensorState);
-    SENSOR_DEBUG_PRINT(__FUNCTION__, " lastTimeChanged:", lastTimeChanged, " tmp:", tmp);
-    lastTimeChanged = tmp;                //yes, record the time of the change
-    lastSensorState = sensorState;        //update state
-    return changeDetected;                //have to wait until stable for the debounce time, so cannot do any more here
-  }
-  else if ((sensorState != debouncedState) && (( tmp - lastTimeChanged) > debounceTime)) //if no change, check if stable for longer then debounce period?
-  {
-    debouncedState = sensorState;         //yes, update state
-    if (sensorState)                      //check if a slot has been detected
-    {
-      timeOfLastSlot2 = timeOfLastSlot1;  //yes, update the times, move last time for a slot to the second last time for a slot
-      timeOfLastSlot1 = tmp;              //store the time this occurred so later can calculate the speed of the wheel
-      changeDetected =  true;
-      SENSOR_DEBUG_PRINT(__FUNCTION__, " timeOfLastSlot2:", timeOfLastSlot2, " timeOfLastSlot1:", timeOfLastSlot1);  //yes
-    }
+    SENSOR_DEBUG_PRINT(__FUNCTION__, " timeBetweenSlots:", timeBetweenSlots, " ", " ");
+    cli();                                   //yes get the time between slots
+    validSlotUnderSensor = false;           //clear flag used by the ISR
+    myTimeBetweenSlots = timeBetweenSlots;  //get the time calculated by the ISR
+    sei();
+    Serial.println(myTimeBetweenSlots);
+    changeDetected = true;
   }
   return changeDetected;
 }
@@ -49,13 +40,12 @@ bool SlottedDisk::sensorCheck(void)
 //calculate speed of the wheel
 void SlottedDisk::calculateSpeed(void)
 {
-  unsigned long timeBetweenSlots = timeOfLastSlot1 - timeOfLastSlot2;     //ignore overflow of millis() after so many days, as goKart will be used for a couple of hours
-  if (timeBetweenSlots >= minTimeBetweenSlots)                            //do debounce check by checking the time between the last two slots is greater than specified min
-    validTimeBetweenSlots = timeBetweenSlots;                             //as time between slots is ok, save it, otherwise ignore it
+   if (myTimeBetweenSlots >= minTimeBetweenSlots)                         //do debounce check by checking the time between the last two slots is greater than specified min
+    validTimeBetweenSlots = myTimeBetweenSlots;                          //as time between slots is ok, save it, otherwise ignore it
 
   /* speed(mm/sec) = wheel diameter(mm) / (time between slots (millisec) * 100  / 1000) = wheel diameter * 10 / time between slots  */
   wheelSpeedmmPerSec =  diskWheelCircum * 10 / validTimeBetweenSlots;
-  SENSOR_DEBUG_PRINT(__FUNCTION__, " timeBetweenSlots:", timeBetweenSlots, " wheelSpeedmmPerSec:", wheelSpeedmmPerSec);   //if  SENSOR_DEBUG defined print out results
+  SENSOR_DEBUG_PRINT(__FUNCTION__, " validTimeBetweenSlots:", validTimeBetweenSlots, " wheelSpeedmmPerSec:", wheelSpeedmmPerSec);   //if  SENSOR_DEBUG defined print out results
   return;
 }
 

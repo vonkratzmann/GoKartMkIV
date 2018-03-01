@@ -8,7 +8,7 @@
 /* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
-#define  JOYSTICK_DEBUG
+//#define  JOYSTICK_DEBUG
 
 #ifdef   JOYSTICK_DEBUG
 #define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.println(b)
@@ -70,7 +70,7 @@
 /* define to run sensor diagnostics which print to the serial monitor
   comment out before code is released
 */
-#define  SENSOR_DEBUG
+//#define  SENSOR_DEBUG
 
 #ifdef   SENSOR_DEBUG
 #define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.println(b)
@@ -81,7 +81,7 @@
 /* define to run main loop diagnostics which print to the serial monitor
   comment out before code is released
 */
-#define  MAIN_LOOP_DEBUG
+//#define  MAIN_LOOP_DEBUG
 
 #ifdef   MAIN_LOOP_DEBUG
 #define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e); Serial.println(f)
@@ -92,7 +92,7 @@
 //system parameters
 /* Note the value of ValidTimeBetweenSlots is only valid for wheels 200mm diameter and larger, and speeds 20km/hr or slower */
 const unsigned int MaxSpeedKmh      =  15;                                      //maximum speed in km/hr. If this is changed check value of ValidTimeBetweenSlots
-const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec for 15km/hour 4,167mm/sec (had 1000 * 1000 / 3600 but gave the wrong number)
+const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec for 15km/hour 4,167mm/sec (had 1000 * 1000 / 3600 but gave the wrong number) that is 4.5 revs/sec for 300mm diameter wheel
 const uint8_t      MaxPower         = 255;                                      //255 gives 100% duty cycle to the PWM, ie max power
 const int          ReverseSpeedSlower = 2;                                      //Slow reverse speed compared to forward speed
 
@@ -176,11 +176,11 @@ const uint8_t  rightDirPin  = 2;          //wired to the motor driver board to s
 const uint8_t  rightPwmPin	= 3;          //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
 
 /* define i/O for led */
-const uint8_t LedPin          =  13; //LED connected to digital pin 13
+const uint8_t LedPin          =  13;      //LED connected to digital pin 13
 
 /* define i/O for slotted wheel
   used to determine speed of goKart
 */
-const uint8_t SensorDiskPin =  5; //Slotted disk sensor connected to digital pin 5
+const uint8_t SensorDiskPin =  2;         //Slotted disk sensor connected to digital pin 2, this is ATmega PD2 PCINT18/INT0
 
 #endif
