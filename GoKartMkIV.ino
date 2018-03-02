@@ -96,26 +96,32 @@ ISR(TIMER2_OVF_vect)
 
 /*
    Slot detector ISR
+   interrupts on change of state of input from slotted wheel sensor
    when a slot is under the sensor, the signal is high
+   on rising edge records the time
+   on a falling edge, check how long it ha been in the high state and if the sensor has been stable in the high state for the debounce period
+   says that a valid slot has been under the sensor, calculates the time between slots, and sets the flag for the main loop to read and process
 */
+unsigned int timeSinceStartSlot;
+volatile unsigned int timeBetweenSlots;
+volatile bool validSlotUnderSensor;
 
 ISR(INT0_vect)
 {
-  if (digitalRead(SensorDiskPin))                       //is it a LOW to HIGH pin change?
+  if (digitalRead(SensorDiskPin))         //its high, so it is it a LOW to HIGH pin change?
   {
-    mySlottedDisk.timeSinceStartSlot = millis();        //yes, save time of low to high change
-    mySlottedDisk.validSlotUnderSensor = false;        //clear flag to say we have had a valid slot detected pulse
+    timeSinceStartSlot = millis();       //yes, save time of low to high change
+    validSlotUnderSensor = false;        //clear flag to say we have had a valid slot detected pulse
   }
   else
   {
-    unsigned long tmp = millis();                                    //no, it is a HIGH to LOW pin change
-    if (tmp - mySlottedDisk.timeSinceStartSlot > slotDebounceTime)   //check if time pulse was high was greater than debounce period
+    unsigned long tmp = millis();                      //no, its low, so it is a HIGH to LOW pin change
+    if (tmp - timeSinceStartSlot > slotDebounceTime)   //check if time pulse was high was greater than debounce period
     {
-      mySlottedDisk.validSlotUnderSensor = true;                                //yes, we've just had a valid slot pulse
-      mySlottedDisk.timeBetweenSlots = tmp - mySlottedDisk.timeSinceStartSlot;  //work out time bewteen slots
+      validSlotUnderSensor = true;                     //yes, we've just had a valid slot pulse
+      timeBetweenSlots = tmp - timeSinceStartSlot;     //work out time bewteen slots
     }
   }
-  return;
 }
 // PID Tuning parameters
 float Kp = 1;   //Proportional Gain
@@ -173,7 +179,7 @@ void setup(void)
   */
 
   pinMode(SensorDiskPin, INPUT);       // equivalent to DDRD  &= ~(1 << DDD5)clear the PD5 pin, so PD5 is now an input
-//  digitalWrite(SensorDiskPin, HIGH);   //turn on pullup register
+  //  digitalWrite(SensorDiskPin, HIGH);   //turn on pullup register
   EICRA  |= (1 << ISC00);              //set to trigger on any logic change
   EIMSK  |= (1 << INT0);               //enable interrupts on INT0
 
@@ -190,16 +196,26 @@ void setup(void)
 */
 void loop(void)
 {
-  if (interrupt_Counter >= One_Sec )          //check if a second has expired
+  if (interrupt_Counter >= Qtr_Sec )          //check if a second has expired
   {
     toggleLed();                              //yes, flash the led
     reset_Counter();                          //reset counter
   }
-  if (mySlottedDisk.sensorCheck())         //check if a new slot under the disk
+  /* check if a valid slot under the sensor */
+  unsigned int tmp = 0;
+  cli();                                      //disable interrupts as about to read variables accessed by ISR
+  if (validSlotUnderSensor)                   //get state of sensor that is set by the ISR
   {
-    mySlottedDisk.calculateSpeed();        //yes, calculate wheel speed
-    goKartSpeed = mySlottedDisk.getSpeed(); //now get the speed
+    tmp = timeBetweenSlots;                   //just had a valid slout under the sensor get the time between slots
+    validSlotUnderSensor = false;
   }
+  sei();
+
+  if (tmp)                                    //check if a new slot was just under the sensor
+  {
+    goKartSpeed = mySlottedDisk.calculateSpeed(tmp);        //yes, calculate wheel speed
+  }
+
   /* check if time to scan joystick for changes to x and Y axis */
   if ((millis() - joys_Time_Of_Last_Scan) > JoyStickScanRate)
   {
