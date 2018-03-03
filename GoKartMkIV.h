@@ -151,7 +151,7 @@ const int           JoyStick_Max_ROC   = 48;   //limit rate of change allowable 
 #else
 /* note this is the debug version, uses a slower scan rate to limit the amount of debug data displyed on the serial monitor window*/
 const unsigned long JoyStickScanRate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
-const int  JoyStick_Max_ROC            = 48;    //limit rate of change allowable by the joystick (see comments above)
+const int           JoyStick_Max_ROC   = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
 
 const int JoystickToPidSampleTime       = 1;      //set ratio of when joystick is sampled to when PID is computed, should not be less than 1
@@ -179,6 +179,8 @@ const uint8_t LedPin          =  13;      //LED connected to digital pin 13
 
 /* define i/O for slotted wheel
   used to determine speed of goKart
+  *** NOTE *** 
+  ISR has to be changed if the SensorDsikPin is changed
 */
 const uint8_t SensorDiskPin =  2;         //Slotted disk sensor connected to digital pin 2, this is ATmega PD2 PCINT18/INT0
 
