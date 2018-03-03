@@ -97,29 +97,39 @@ ISR(TIMER2_OVF_vect)
 /*
    Slot detector ISR
    interrupts on change of state of input from slotted wheel sensor
+   does a quick check for noise by ensuring pulses are above a specified size, if not ignorethat pulse
    when a slot is under the sensor, the signal is high
    on rising edge records the time
-   on a falling edge, check how long it ha been in the high state and if the sensor has been stable in the high state for the debounce period
+   on a falling edge, check how long it has been in the high state and if the sensor has been stable in the high state ie for the debounce period
    says that a valid slot has been under the sensor, calculates the time between slots, and sets the flag for the main loop to read and process
 */
-unsigned int timeSinceStartSlot;
+unsigned int          timeSinceStartSlot;
+unsigned int          timeSinceStartPreviousSlot;
 volatile unsigned int timeBetweenSlots;
-volatile bool validSlotUnderSensor;
+volatile bool         validSlotUnderSensor;
+unsigned long         lastPinChangeTime ;
 
 ISR(INT0_vect)
 {
+  unsigned long tmp = millis();                   //get the current time
+  if (tmp - lastPinChangeTime <= NoisePeriod)    //check not a noisy pulse
+  {
+    lastPinChangeTime = tmp;              //yes just noise, ignore, save the time so we can compare aagainst the next pulse edge
+    return;
+  }
+  lastPinChangeTime = tmp;                //save time
   if (digitalRead(SensorDiskPin))         //its high, so it is it a LOW to HIGH pin change?
   {
-    timeSinceStartSlot = millis();       //yes, save time of low to high change
-    validSlotUnderSensor = false;        //clear flag to say we have had a valid slot detected pulse
+    timeSinceStartSlot = tmp;             //yes, save time of low to high change, ie the start of a slot
+    validSlotUnderSensor = false;         //clear flag to say we have just had a valid slot detected pulse
   }
-  else
+  else                                    //no, its low, so it is a HIGH to LOW pin change, ie the end of a slot
   {
-    unsigned long tmp = millis();                      //no, its low, so it is a HIGH to LOW pin change
-    if (tmp - timeSinceStartSlot > slotDebounceTime)   //check if time pulse was high was greater than debounce period
+    if (tmp - timeSinceStartSlot > slotDebounceTime)          //check if time pulse was high was greater than debounce period, if not ignore
     {
-      validSlotUnderSensor = true;                     //yes, we've just had a valid slot pulse
-      timeBetweenSlots = tmp - timeSinceStartSlot;     //work out time bewteen slots
+      validSlotUnderSensor = true;                            //yes, we've just had a valid slot pulse
+      timeBetweenSlots = tmp - timeSinceStartPreviousSlot;    //work out time bewteen slots
+      timeSinceStartPreviousSlot = timeSinceStartSlot;        //save time for next calculation
     }
   }
 }
@@ -196,7 +206,7 @@ void setup(void)
 */
 void loop(void)
 {
-  if (interrupt_Counter >= Qtr_Sec )          //check if a second has expired
+  if (interrupt_Counter >= OneSec )          //check if a second has expired
   {
     toggleLed();                              //yes, flash the led
     reset_Counter();                          //reset counter
@@ -206,8 +216,8 @@ void loop(void)
   cli();                                      //disable interrupts as about to read variables accessed by ISR
   if (validSlotUnderSensor)                   //get state of sensor that is set by the ISR
   {
-    tmp = timeBetweenSlots;                   //just had a valid slout under the sensor get the time between slots
-    validSlotUnderSensor = false;
+    tmp = timeBetweenSlots;                   //just had a valid slout under the sensor get the time between slots calculated by the ISR
+    validSlotUnderSensor = false;             //clear flag, this is set by the ISR
   }
   sei();
 

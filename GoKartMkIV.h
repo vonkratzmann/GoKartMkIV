@@ -101,8 +101,8 @@ const int          ReverseSpeedSlower = 2;                                      
 #define RIGHT       true
 #define LEFT        false
 
-const unsigned int One_Sec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
-const unsigned int Qtr_Sec =  490;            //used in main loop to flash led show for a quarter of a second
+const unsigned int OneSec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
+const unsigned int QtrSec =  490;            //used in main loop to flash led show for a quarter of a second
 
 /* joystick Parameters */
 
