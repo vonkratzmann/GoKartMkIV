@@ -18,9 +18,9 @@ SlottedDisk::SlottedDisk(uint8_t parSensorDin)
 //calculate speed of the wheel
 unsigned int  SlottedDisk::calculateSpeed(unsigned long slotTime)
 {
-  /* speed(mm/sec) = wheel diameter(mm) * 1000(convert millisec to seconds) / (time between slots (millisec) * number of slots) */
-  wheelSpeedmmPerSec =  (long) diskWheelCircum  * 1000 / (slotTime * (long) noOfSlots);
-  SENSOR_DEBUG_PRINT(__FUNCTION__, " slotTime:", slotTime, " wheelSpeedmmPerSec:", wheelSpeedmmPerSec);   //if  SENSOR_DEBUG defined print out results
+  /* speed(mm/sec) = wheel diameter(mm) * 1000000(convert microsec to seconds) / (time between slots (microsecs) * number of slots) */
+  wheelSpeedmmPerSec =  (long) diskWheelCircum  * 1000000 / (slotTime * (long) noOfSlots);
+  SENSOR_DEBUG_PRINT(__FUNCTION__, " slotTime(msec):", slotTime/1000, " wheelSpeedmmPerSec:", wheelSpeedmmPerSec);   //if  SENSOR_DEBUG defined print out results
   return wheelSpeedmmPerSec;
 }
 

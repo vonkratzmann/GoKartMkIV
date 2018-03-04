@@ -7,18 +7,18 @@
 #include "Arduino.h"
 #include "GoKartMkIV.h"
 
-const unsigned long NoisePeriod        = 1;      //pulses must be longer than this many millseconds otherwise they are considered noise
+const unsigned long NoisePeriod        = 5000;      //pulses must be longer than this many microseconds otherwise they are considered noise
 /*********************************************************************************************************
 *                                            *** NOTE ***                                                *
 * slotDebounceTime   needs to be adjusted if the maximum speed, wheel size or number of slots is changed *
 *                                                                                                        *
 **********************************************************************************************************/
-const int slotDebounceTime             = 10;     //debounce time in milliseconds 
+const int slotDebounceTime             = 10000;   //debounce time in microseconds
 const unsigned int noOfSlots           = 8;      //number of slots in disk
 const unsigned int diskWheelDia        = 300;    //diameter of wheel with slotted disk in mm
 const unsigned int diskWheelCircum     = 3.141 * diskWheelDia; //circumference of wheel with slotted disk in mm
 /* for information only
-   times(rounded)in millseconds between slots for different maximum speed and wheel diameters for a 100 slot disc
+   time between slots(rounded)in millseconds for different maximum speed and wheel diameters
                        100 slot disc                  8 slot disc
    Wheel Dia(mm)    100 200 250 300 350            100 200 250 300 350
    Max Speed(km/hr)

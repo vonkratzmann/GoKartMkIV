@@ -99,9 +99,11 @@ ISR(TIMER2_OVF_vect)
    interrupts on change of state of input from slotted wheel sensor
    does a quick check for noise by ensuring pulses are above a specified size, if not ignore that pulse
    when a slot is under the sensor, the signal is high
-   on rising edge records the time
+   on rising edge records the time in microseconds
    on a falling edge, check how long it has been in the high state and if the sensor has been stable in the high state ie for the debounce period
    says that a valid slot has been under the sensor, calculates the time between slots, and sets the flag for the main loop to read and process
+   Uses function micros() rather than millis() as with some disks with 100 slots the time between slots is only a few milliseconds.
+   At the moment ignore the fact that the microseconds will overflow in 70 minutes
 */
 unsigned long          timeSinceStartSlot;
 unsigned long          timeSinceStartPreviousSlot;
@@ -111,7 +113,7 @@ unsigned long          lastPinChangeTime ;
 
 ISR(INT0_vect)
 {
-  unsigned long tmp = millis();                   //get the current time
+  unsigned long tmp = micros();                  //get the current time in microseconds
   if (tmp - lastPinChangeTime <= NoisePeriod)    //check not a noisy pulse
   {
     lastPinChangeTime = tmp;              //yes just noise, ignore, save the time so we can compare against the next pulse edge
