@@ -105,7 +105,7 @@ ISR(TIMER2_OVF_vect)
 */
 unsigned long          timeSinceStartSlot;
 unsigned long          timeSinceStartPreviousSlot;
-volatile unsigned int  timeBetweenSlots;
+volatile unsigned long  timeBetweenSlots;
 volatile bool          validSlotUnderSensor;
 unsigned long          lastPinChangeTime ;
 
@@ -114,7 +114,7 @@ ISR(INT0_vect)
   unsigned long tmp = millis();                   //get the current time
   if (tmp - lastPinChangeTime <= NoisePeriod)    //check not a noisy pulse
   {
-    lastPinChangeTime = tmp;              //yes just noise, ignore, save the time so we can compare aagainst the next pulse edge
+    lastPinChangeTime = tmp;              //yes just noise, ignore, save the time so we can compare against the next pulse edge
     return;
   }
   lastPinChangeTime = tmp;                //save the time, so can check the next pulse
@@ -213,7 +213,7 @@ void loop(void)
     reset_Counter();                          //reset counter
   }
   /* check if a valid slot under the sensor */
-  unsigned int tmp = 0;
+  unsigned long tmp = 0;
   cli();                                      //disable interrupts as about to read variables accessed by ISR
   if (validSlotUnderSensor)                   //get state of sensor that is set by the ISR
   {

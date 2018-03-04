@@ -44,7 +44,7 @@ class SlottedDisk
     bool validSlotUnderSensor;
     
     SlottedDisk(uint8_t);	                            //constructor
-    unsigned int  calculateSpeed(unsigned int);       //calculate speed of the wheel
+    unsigned int  calculateSpeed(unsigned long);       //calculate speed of the wheel
     unsigned int getSpeed(void);                      //get speed of the wheel
 
 };
