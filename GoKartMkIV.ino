@@ -107,7 +107,7 @@ ISR(TIMER2_OVF_vect)
 */
 unsigned long          timeSinceStartSlot;
 unsigned long          timeSinceStartPreviousSlot;
-volatile unsigned long  timeBetweenSlots;
+volatile unsigned long timeBetweenSlots;
 volatile bool          validSlotUnderSensor;
 unsigned long          lastPinChangeTime ;
 
@@ -214,25 +214,25 @@ void loop(void)
     toggleLed();                              //yes, flash the led
     reset_Counter();                          //reset counter
   }
-  /* check if a valid slot under the sensor */
-  unsigned long tmp = 0;
-  cli();                                      //disable interrupts as about to read variables accessed by ISR
-  if (validSlotUnderSensor)                   //get state of sensor that is set by the ISR
-  {
-    tmp = timeBetweenSlots;                   //just had a valid slout under the sensor get the time between slots calculated by the ISR
-    validSlotUnderSensor = false;             //clear flag, this is set by the ISR
-  }
-  sei();
-
-  if (tmp)                                    //check if a new slot was just under the sensor
-  {
-    goKartSpeed = mySlottedDisk.calculateSpeed(tmp);        //yes, calculate wheel speed
-  }
-
   /* check if time to scan joystick for changes to x and Y axis */
   if ((millis() - joys_Time_Of_Last_Scan) > JoyStickScanRate)
   {
     joys_Time_Of_Last_Scan = millis();          //yes, reset timer, check x and Y axis for changes
+    /* check if a valid slot under the sensor */
+    unsigned long tmp = 0;
+    cli();                                      //disable interrupts as about to read variables accessed by ISR
+    if (validSlotUnderSensor)                   //get state of sensor that is set by the ISR
+    {
+      tmp = timeBetweenSlots;                   //just had a valid slot under the sensor, get the time between slots calculated by the ISR
+      validSlotUnderSensor = false;             //clear flag, this is set by the ISR
+    }
+    sei();                                      //interrupts back on
+    if (tmp)                                    //check if a slot has been under the sensor
+    {
+      goKartSpeed = mySlottedDisk.calculateSpeed(tmp);        //yes, calculate wheel speed
+
+      
+    }
     if (js.check_X_Axis() || js.check_Y_Axis()) //check if x axis of joystick has changed or y axis of joystick has changed
     {
       /* yes one has changed, so as y changes speed forwards or backwards, always process y before x

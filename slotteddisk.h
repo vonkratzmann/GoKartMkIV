@@ -35,8 +35,9 @@ class SlottedDisk
     bool			sensorState;		        //stores if a slot is under the detector,
     bool      lastSensorState;        //stores previous state
     bool      debouncedState;         //stores deounced state
-    unsigned long      myTimeBetweenSlots = 0;
-    unsigned int       wheelSpeedmmPerSec = 0;    //wheel speed in millmeters per second, use mm/sec units as provides appropiate size numbers to use a type integer, eg 15km/hr = 4,167mm/sec
+    unsigned long   myTimeBetweenSlots [3] = {0, 0, 0};     //store last three values and average to calculate speed
+    int             slotTimeCounter;
+    unsigned int    wheelSpeedmmPerSec = 0;                 //wheel speed in millmeters per second, use mm/sec units as provides appropiate size numbers to use a type integer, eg 15km/hr = 4,167mm/sec
 
   public:
     /* Slotted wheel ISR variables*/
