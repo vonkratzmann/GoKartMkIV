@@ -13,9 +13,9 @@ const unsigned long NoisePeriod        = 5000;      //pulses must be longer than
 * slotDebounceTime   needs to be adjusted if the maximum speed, wheel size or number of slots is changed *
 *                                                                                                        *
 **********************************************************************************************************/
-const int slotDebounceTime             = 10000;   //debounce time in microseconds
+const int slotDebounceTime             = 5000;   //debounce time in microseconds
 const unsigned int noOfSlots           = 8;      //number of slots in disk
-const unsigned int diskWheelDia        = 300;    //diameter of wheel with slotted disk in mm
+const unsigned int diskWheelDia        = 200;    //diameter of wheel with slotted disk in mm
 const unsigned int diskWheelCircum     = 3.141 * diskWheelDia; //circumference of wheel with slotted disk in mm
 /* for information only
    time between slots(rounded)in millseconds for different maximum speed and wheel diameters
