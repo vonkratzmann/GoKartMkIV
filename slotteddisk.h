@@ -7,25 +7,25 @@
 #include "Arduino.h"
 #include "GoKartMkIV.h"
 
-const unsigned long NoisePeriod        = 5000;      //pulses must be longer than this many microseconds otherwise they are considered noise
+const unsigned long NoisePeriod        = 250;      //pulses must be longer than this many microseconds otherwise they are considered noise
 /*********************************************************************************************************
 *                                            *** NOTE ***                                                *
 * slotDebounceTime   needs to be adjusted if the maximum speed, wheel size or number of slots is changed *
 *                                                                                                        *
 **********************************************************************************************************/
-const int slotDebounceTime             = 5000;   //debounce time in microseconds
+const int slotDebounceTime             = 1000;   //debounce time in microseconds
 const unsigned int noOfSlots           = 8;      //number of slots in disk
-const unsigned int diskWheelDia        = 200;    //diameter of wheel with slotted disk in mm
+const unsigned int diskWheelDia        = 100;    //diameter of wheel with slotted disk in mm
 const unsigned int diskWheelCircum     = 3.141 * diskWheelDia; //circumference of wheel with slotted disk in mm
 /* for information only
    time between slots(rounded)in millseconds for different maximum speed and wheel diameters
                        100 slot disc                  8 slot disc
-   Wheel Dia(mm)    100 200 250 300 350            100 200 250 300 350
+   Wheel Dia(mm)    75  100  200  250 300 350         75  100 200 250 300 350
    Max Speed(km/hr)
-         5           2   5   6   7   9              31  61  77  92  108
-         10          1   2   3   4   4              15  31  38  46   54
-         15         .8   2   2   2   3              10  20  26  31   36
-         20         .6   1   1   2   2               8  15  19  23   27         
+         5         1.8  2.5   5   6    7   9          23  31  61  77  92  108
+         10         .9  1.2   2   3    4   4          12  15  31  38  46   54
+         15         .6   .8   2   2    2   3           8  10  20  26  31   36
+         20         .5   .6   1.2 1.5  1.8 2.2         6   8  15  19  23   27         
 */
 
 class SlottedDisk
