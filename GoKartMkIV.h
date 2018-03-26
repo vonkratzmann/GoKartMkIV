@@ -5,6 +5,14 @@
 
 #include "arduino.h"
 
+/* define to run hardware tests, alows manually to enter speeds 
+ * does not run normal code
+ * comment out to run normal code
+ */
+
+//if HardwareTest defined, compile the HardwareTest code, otherwise ignore and compile normal code
+#define HardwareTest
+
 /* define to run joystick diagnostics which which read the joystick and print to the serial monitor
   comment out before code is released
 */
@@ -60,7 +68,7 @@
 /* define to run motor diagnostics which print to the serial monitor
   comment out before code is released
 */
-//#define  MOTOR_DEBUG
+#define  MOTOR_DEBUG
 #ifdef   MOTOR_DEBUG
 #define  MOTOR_DEBUG_PRINT(x, y, z)    Serial.print(x);  Serial.print(y);  Serial.println(z)
 #else
@@ -90,10 +98,10 @@
 #endif
 
 //system parameters
-const unsigned int MaxSpeedKmh      =  15;                                      //maximum speed in km/hr
-const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec for 15km/hour 4,167mm/sec (had 1000 * 1000 / 3600 but gave the wrong number) that is 4.5 revs/sec for 300mm diameter wheel
+const unsigned int MaxSpeedKmh      =  5;                                       //maximum speed in km/hr
+const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec, use rather km/hr as more resolution for type int. (for 15km/hour 4,167mm/sec that is 4.5 revs/sec for 300mm diameter wheel)
 const uint8_t      MaxPower         = 255;                                      //255 gives 100% duty cycle to the PWM, ie max power
-const int          ReverseSpeedSlower = 2;                                      //Slow reverse speed compared to forward speed
+const int          ReverseSpeedSlower = 5;                                      //Slow reverse speed compared to forward speed as a safety measure
 
 /* set up directions for motors */
 #define FORWARD     true
@@ -123,7 +131,6 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 //    | 0-479 | 480 - 543 | 544 - 1023 |
 //    |  Low  |  Stopped  |    High    |
 //range  480      64           480
-
 //
 //                  Joystick Operation
 //         (orientation with cables at the bottom)
@@ -132,7 +139,7 @@ const int     Stopped_Low  = 480;      //setjoystick low range for stopped
 //                        0
 //
 //   (Dir 0) Left <-     JoyStick   -> Right(dir 1)
-//      0                               1023
+//      1023                               0
 //
 //                     Back   (dir 0)
 //                        1023
@@ -159,20 +166,20 @@ const int JoystickToPidSampleTime       = 1;      //set ratio of when joystick i
 const int  Noise_Mask                   = 0xFFF0; //clear bottom bits to mask any noise on signal
 
 /* ADC I/O for Joystick*/
-const uint8_t Xaxis_JoystickAnalogPin     = 1;    //x axis of joystick
-const uint8_t Yaxis_JoystickAnalogPin     = 0;    //y xis of joystick
+const uint8_t Xaxis_JoystickAnalogPin     = 0;    //x axis of joystick
+const uint8_t Yaxis_JoystickAnalogPin     = 1;    //y xis of joystick
 
 /** motors
    define i/o for each motor driver board, each board has 2 inputs: direction & pwm
 */
-uint8_t* const leftPwmReg    = (uint8_t *)0xB3;       // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
-uint8_t* const rightPwmReg   = (uint8_t *)0xB4;       // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
 
-const uint8_t  leftDirPin	  = 10;         //wired to the motor driver board to set the direction the motor turns
-const uint8_t  leftPwmPin	  = 11;         //PWM pulse to set the speed of the motor, this is ATmega PB3 OC2A, UNO pin 11
+const uint8_t  leftDirPin	  = 4;                //wired to the motor driver board to set the direction the motor turns
+const uint8_t  leftPwmPin	  = 3;                //PWM pulse to set the speed of the motor, this is ATmega PB3 OC2A, UNO pin 11
+uint8_t* const leftPwmReg   = (uint8_t *)0xB4;  // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
 
-const uint8_t  rightDirPin  = 2;          //wired to the motor driver board to set the direction the motor turns
-const uint8_t  rightPwmPin	= 3;          //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
+const uint8_t  rightDirPin  = 10;               //wired to the motor driver board to set the direction the motor turns
+const uint8_t  rightPwmPin	= 11;               //PWM pulse to set the speed of the motor, this is ATmega PD3 OC2B, UNO pin 3
+uint8_t* const rightPwmReg  = (uint8_t *)0xB3;  // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
 
 /* define i/O for led */
 const uint8_t LedPin          =  13;      //LED connected to digital pin 13

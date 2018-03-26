@@ -10,6 +10,23 @@ JoyStick::JoyStick ()
   x_New = y_New = 511;                       //set joy stick to center position ie stopped
 }
 
+
+/* JoyStick get x axis or position
+    reads joystick, returns raw value unprocessed
+*/
+unsigned int  JoyStick::get_X_Axis(void) {
+  return  (unsigned int) analogRead(Xaxis_JoystickAnalogPin); //read joystick x position
+}                                                             //end of get_X_Axis()
+
+
+/* JoyStick get y axis or position
+  reads joystick,  returns raw value unprocessed
+*/
+unsigned int  JoyStick::get_Y_Axis(void) {
+  return  (unsigned int) analogRead(Yaxis_JoystickAnalogPin); //read joystick y position
+}                                                             //end of get_Y_Axis()
+
+
 /* JoyStick check x position
     reads joystick, compares current and new
     masks bottom bits to prevent unwanted noise and doing unnecessary processing
@@ -43,6 +60,7 @@ bool JoyStick::check_X_Axis (void)               //check joystick for any change
   }
   return x_Chnged;
 }
+
 
 /* JoyStick check y position
    reads joystick, compares current and new
@@ -78,6 +96,7 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
   return y_Chnged;
 }
 
+
 /* JoyStick::process_X
    accepts two pointer arguments to allow update of amount of turn requested and direction
    checks if its in stopped range, if yes sets turning percent to zero
@@ -92,7 +111,7 @@ void JoyStick::process_X(unsigned int *turningDegrees, bool *new_Dir)           
   }
   else                                                          //no, joystick requesting movement
   {
-    if (x_Cur < Stopped_Low)                                    //is joystick asking to move to left
+    if (x_Cur > Stopped_High)                                    //is joystick asking to move to left
     {
       *new_Dir = LEFT;                                          //yes, moving to left
       *turningDegrees = map(x_Cur, Stopped_Low - 1, 0, 0, 90);  //Scale joystick position to turning range of 0 to 90 degrees
@@ -106,6 +125,8 @@ void JoyStick::process_X(unsigned int *turningDegrees, bool *new_Dir)           
     }
   }
 }
+
+
 /* JoyStick::process_Y
    accepts two pointer arguments to allow update of new speed and direction
    checks if its in stopped range, if yes sets speed to zero
@@ -122,7 +143,7 @@ void JoyStick::process_Y(unsigned int *new_Spd, bool *new_Dir)            //proc
   else                                                          //no, joystick requesting movement
   {
     if (y_Cur < Stopped_Low)                                    //is joystick asking to skow down
-    { 
+    {
       *new_Dir = FORWARD;                                       //yes, moving forward
       /* Scale joystick position to speed in millimeters per second
           so that forward and reverse are scaled to the same range

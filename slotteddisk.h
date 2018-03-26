@@ -10,23 +10,28 @@
 const unsigned long NoisePeriod        = 250;      //pulses must be longer than this many microseconds otherwise they are considered noise
 /*********************************************************************************************************
 *                                            *** NOTE ***                                                *
-* slotDebounceTime   needs to be adjusted if the maximum speed, wheel size or number of slots is changed *
+* slotDebounceTime needs to be adjusted if the maximum speed, wheel size or number of slots is changed   *
 *                                                                                                        *
 **********************************************************************************************************/
 const int slotDebounceTime             = 1000;   //debounce time in microseconds
 const unsigned int noOfSlots           = 8;      //number of slots in disk
-const unsigned int diskWheelDia        = 100;    //diameter of wheel with slotted disk in mm
+const unsigned int diskWheelDia        = 120;    //diameter of wheel with slotted disk in mm
 const unsigned int diskWheelCircum     = 3.141 * diskWheelDia; //circumference of wheel with slotted disk in mm
-/* for information only
-   time between slots(rounded)in millseconds for different maximum speed and wheel diameters
-                       100 slot disc                  8 slot disc
-   Wheel Dia(mm)    75  100  200  250 300 350         75  100 200 250 300 350
-   Max Speed(km/hr)
-         5         1.8  2.5   5   6    7   9          23  31  61  77  92  108
-         10         .9  1.2   2   3    4   4          12  15  31  38  46   54
-         15         .6   .8   2   2    2   3           8  10  20  26  31   36
-         20         .5   .6   1.2 1.5  1.8 2.2         6   8  15  19  23   27         
-*/
+
+/**************************************************************************************************************
+                                      for information only                                                    *
+   time between slots(rounded)in millseconds for different maximum speed, wheel diameters and number of slots *
+                                                                                                              *
+                           Slots                        Slots                           Slots                 *
+                            100                          20                               8                   *
+Wheel diameter mm 75  100 200 250 300 350   75  100   200  250  300  350     75   100  200  250  300  350     *
+Speed km/hr                                                                                                   *                             
+          5       1.8 2.5 4.9 6.1 7.4 8.6   9.2 12.3 24.6 30.7 36.9 43.0    23.0 30.7 61.5 76.8 92.2 107.5    *
+         10       0.9 1.2 2.5 3.1 3.7 4.3   4.6  6.1 12.3 15.4 18.4 21.5    11.5 15.4 30.7 38.4 46.1  53.8    *
+         15       0.6 0.8 1.6 2.0 2.5 2.9   3.1  4.1  8.2 10.2 12.3 14.3     7.7 10.2 20.5 25.6 30.7  35.8    *
+         20       0.5 0.6 1.2 1.5 1.8 2.2   2.3  3.1  6.1  7.7  9.2 10.8     5.8  7.7 15.4 19.2 23.0  26.9    *
+                                                                                                              *
+***************************************************************************************************************/
 
 class SlottedDisk
 {
@@ -45,9 +50,9 @@ class SlottedDisk
     bool validSlotUnderSensor;
     
     SlottedDisk(uint8_t);	                            //constructor
-    unsigned int  calculateSpeed(unsigned long);       //calculate speed of the wheel
-    unsigned int getSpeed(void);                      //get speed of the wheel
-
+    unsigned int  calculateSpeed(unsigned long);      //calculate speed of the wheel
+    unsigned int  getSpeed(void);                     //get speed of the wheel
+    boolean       getSensorState(void);               //get state of sensor without and debouncing or noise processing
 };
 #endif
 

@@ -16,9 +16,11 @@ class JoyStick
 
   public:
     JoyStick ();
-    bool    check_X_Axis (void);  //check if change in joystick x position
-    bool    check_Y_Axis (void);  //check if change in joystick y position
-    void    process_X(unsigned int *spd, bool *dir); // process change for x axis of joystick
-    void    process_Y(unsigned int *spd, bool *dir); // process change for y axis of joystick
+    bool          check_X_Axis (void);  //check if change in joystick x position
+    bool          check_Y_Axis (void);  //check if change in joystick y position
+    void          process_X(unsigned int *spd, bool *dir); //process change for x axis of joystick
+    void          process_Y(unsigned int *spd, bool *dir); //process change for y axis of joystick
+    unsigned int  get_X_Axis(void);                        //reads joystick, returns raw x value unprocessed
+    unsigned int  get_Y_Axis(void);                        //reads joystick, returns raw y value unprocessed
 };
 #endif

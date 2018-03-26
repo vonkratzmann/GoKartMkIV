@@ -1,0 +1,22 @@
+*** Ensure 'Newline' is selected in the bottom dropdown menu ***
+Ls set speed of left motor,  s = 0 to 255, if error s = 0
+Rs set speed of right motor, s = 0 to 255, if error s = 0
+Ld set direction of left motor,  d = f or b, forwards/backwards, if error d = forwards
+Ld set direction of right motor, d = f or b, forwards/backwards, if error d = forwards
+Dz display joystick x and y axis every z milliseconds, if error z = 0
+Ds display sensor input state each time changes, if error stop the display 
+updatePower myPower:0
+updatePower myDir:1
+updatePower myPower:0
+updatePower myDir:1
+Leftspeed:100 Rightspeed:0 Leftdir:0 Rightdir:0 Leftpower:100 Rightpower:0
+updatePower myPower:100
+updatePower myDir:0
+updatePower myPower:0
+updatePower myDir:0
+Leftspeed:100 Rightspeed:200 Leftdir:0 Rightdir:0 Leftpower:100 Rightpower:200
+updatePower myPower:100
+updatePower myDir:0
+updatePower myPower:200
+updatePower myDir:0
+Leftspeed:100 Rightspeed:0 Leftdir:0 Rightdir:0 Leftpower:100 Rightpower:0

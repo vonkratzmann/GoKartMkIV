@@ -44,7 +44,7 @@ bool Motor::getDir(void)
 
 
 /* updatePower
-   updates the current powerto the motor by wrtiing to PWM register
+   updates the current powerto the motor by writting to PWM register
 */
 void Motor::updatePower(uint8_t power)
 {
