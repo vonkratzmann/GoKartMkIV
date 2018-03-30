@@ -4,7 +4,7 @@
    Date:      13/12/2017
 */
 
-/** System Parameters
+/** System Parameters **
     Maximum speed is a nomimanted speed,
       maximum physical speed is function of motor, gearing and wheel diameter
       Motor loaded rpm range: 2600 3000 rpm, Average 2800 rpm
@@ -12,37 +12,48 @@
       Drive wheel sprocket 68 teeth
       Drive wheel diameter 250mm
       Maximum physical speed = 2800 * 9 / 68 * (3.141 * .250) / 1000 * 60 = 17.5 km/hr
-    Maximum reverse speed is a nominated fraction of the nominated maximum forward speed
-*/
+    Maximum reverse speed is a nominated fraction of the nominated maximum forward speed, slowed for safety reasons
 
-/** System Harwdare Summary
+** System Harwdare Summary **
    System consists of:
    Two 12v DC motors
-   A joystick connected to two 10 bit ADCS, forwards 0 to 511,backwards 512 to 1023
+   A joystick connected to two 10 bit ADCS,
    On/Off switch
    12V DC battery
    Microprocessor - Arduino Uno running a ATmega328
    Driver Printed Circuit Boards for the two DC motors
-   8v DC power supply for the microprocessor
+   zener/resistor acting as a DC power supply for the microprocessor
    Each motor via a sprocket drives a chain to the two rear wheels
+   Rear castor wheel with a sensor used to calculate the speed
 
    The program reads the joystick at a preddefined rate
-   then converts these readings into a Pulse width Modulated output and direction to drive the motors direction and speed
+   converts these readings into a setpoint for a PID algorithm along with the current speed from the sensor.
+   The PID then calculates the power output power for the motors
+   This power ouput is converted to a Pulse width Modulated output and along with direction is used to drive the motors
 
    Uses counter 2 and interrupts to generate fast mode pwm pulses, freq is 1.960kHz
    Normal operation the diagnostic led fashes on and off every second via the ISR
 
-   There are a number of simple diagnostics which can be enable by the #DEFINEs in GoKartMkIII.h
-*/
+   The main loop has into two exclusive parts, :
+   1. is used to test the hardware by a simple command interface via the serial monitor. A define statement "#define HardwareTest" in GoKartMkIV.h enables
+   this code and the normal main loop code is not run
+   2. is the normal main program. This has a number of simple debug print statements which can be enable by the #DEFINEs in GoKartMkIV.h
+   these can be used to debug the code in the normal main loop.
 
-/** Software Structure Overview
+   With reagrd to testing and debugging there is some overlap between the two parts of the main program
+
+** Software Structure Overview **
    The system consists of 6 files:
-    GOKartMKIV.ino:  Variable declarations, oject definitions, ISR, Setup and main loop
-    GOKartMKIV.h:    Diagnostic definitions, I/O and constants
-    joystick.cpp:  Joystick class member functions
-    joystick.h:    Joystick class decelerations
-    motor.cpp:     Motor class member functions
-    motor.h:       Motor class decelerations
+    GOKartMKIV.ino:   Variable declarations, oject definitions, ISR, Setup and main loop
+    GOKartMKIV.h:     Diagnostic definitions, I/O and constants
+    joystick.cpp:     Joystick class member functions
+    joystick.h:       Joystick class decelerations
+    motor.cpp:        Motor class member functions
+    motor.h:          Motor class decelerations
+    slotteddisk.cpp:  Slotted disk(wheel speed sensor) class member functions
+    slotteddisk.h:    Slotted disk class decelerations
+    hardwaretests.cpp:Hardwaretests  class member functions
+    hardwaretests.h:  Hardwaretests Motor class decelerations
 
     The main loop logic for the x axis is:
     check if time to flash the onboard led on or off, used to show program and isr are running
@@ -51,22 +62,29 @@
 
     if either one has changed process the change,
     as y changes speed forwards or backwards, always process y before x
-    use the y speed to firstly set the speed and direction for either forwards or backwards by calling process_Y()
+    use the y to firstly set the requested speed and direction for either forwards or backwards by calling process_Y()
     the reverse speed maximum has a seperate limit to the forward speed to prevent moving in reverse too quickly
-    then use x to increase or decrease the speed of the left or right wheels to enable turning by calling process_X()
-    to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged
+    This requested speed is the setpoit for the PID alogorithm, which calculates the output power
 
+
+    then use x to increase or decrease the requested speed of the left or right wheels to enable turning by calling process_X()
+    to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged
     Note the value of X is scaled as a percentage of the current y speed to limit turning rate.
+    The output
 
     Then calls:
       "left_Motor.update_Speed() to update motor speed from the requested speed
       "left_Motor.updateDir()" to update motor direction from the requested direction
       "right_Motor.update_Speed()" to update motor speed from the requested speed
-      "right_Motor.updateDir()" to update motor direction from the requested directio
+      "right_Motor.updateDir()" to update motor direction from the requested direction
+
+      *** Note ****
+      as motor sprockets face each other, ie orientated by 180 degrees,
+      the direction of the left motor is complemented compared to the right, so both wheels turn in the same direction.
+      Could have changed the wiring to left motor to adress this issue, but felt it was easier to leave the wiring the same for each motor
 */
 
 #include "GoKartMkIV.h"
-
 #include "joystick.h"
 #include "motor.h"
 #include "slotteddisk.h"
@@ -77,9 +95,11 @@ unsigned int  interrupt_Counter = 0;          //used in main loop to show the IS
 unsigned long joys_Time_Of_Last_Scan = 0;     //track when we last scanned for joystick changes
 unsigned int  goKartSpeed = 0;                //stores speed of GoKart
 
-unsigned int  xTurningDegrees,  yReqSpeed;    //used in main loop to return values from joystick processing
+unsigned int  xTurningDegrees = 0;            //used in main loop to return values from joystick processing
+unsigned int  yReqSpeed = 0;                  //used in main loop to return values from joystick processing
 uint8_t       leftPower, rightPower;          //used in main loop
 bool          xDir = LEFT,  yDir = FORWARD;   //used in main loop
+bool          currentDir = FORWARD;           //used in main loop, to check before change direction
 
 uint8_t led = LOW;                            //state of led, initially off
 bool lastSensorState;                         //used by diagnostics
@@ -101,7 +121,8 @@ Motor right_Motor(rightPwmReg, rightDirPin, rightPwmPin);
 /* define slotted disk */
 SlottedDisk mySlottedDisk(SensorDiskPin);
 
-/* Interrupt Service Routine for when counter overflows in timer 2 */
+/* Interrupt Service Routine for when counter overflows in timer 2
+    used only for timing purposes */
 
 ISR(TIMER2_OVF_vect)
 {
@@ -126,25 +147,21 @@ volatile unsigned long timeBetweenSlots;
 volatile bool          validSlotUnderSensor;
 unsigned long          lastPinChangeTime ;
 
-ISR(INT0_vect)
+ISR(PCINT1_vect)
 {
   unsigned long tmp = micros();                  //get the current time in microseconds
-  if (tmp - lastPinChangeTime <= NoisePeriod)    //check not a noisy pulse
-  {
+  if (tmp - lastPinChangeTime <= NoisePeriod) {  //check not a noisy pulse
     lastPinChangeTime = tmp;              //yes just noise, ignore, save the time so we can compare against the next pulse edge
     return;
   }
   lastPinChangeTime = tmp;                //save the time, so can check the next pulse
-  /* Note line below has to be changed if the SensorDsikPin value is changed */
-  if (PIND &= B00000100)                  //read sensor directly rather than use DigitalRead(), its high, so it is it a LOW to HIGH pin change
-  {
+  /* Note line below has to be changed if the SensorDiskPin value is changed */
+  if (PINC &= B00000100) {                //read sensor directly rather than use DigitalRead(A2), its high, so it is it a LOW to HIGH pin change
     timeSinceStartSlot = tmp;             //yes, save time of low to high change, ie the start of a slot
     validSlotUnderSensor = false;         //clear flag to say we have just had a complete valid slot under sensor
   }
-  else                                    //no, its low, so it is a HIGH to LOW pin change, ie the end of a slot
-  {
-    if (tmp - timeSinceStartSlot > slotDebounceTime)          //check if time pulse was high was greater than debounce period, if not ignore
-    {
+  else {                                  //no, its low, so it is a HIGH to LOW pin change, ie the end of a slot
+    if (tmp - timeSinceStartSlot > slotDebounceTime) {        //check if time pulse was high was greater than debounce period, if not ignore
       validSlotUnderSensor = true;                            //yes, we've just had a valid slot pulse
       timeBetweenSlots = tmp - timeSinceStartPreviousSlot;    //work out time bewteen slots
       timeSinceStartPreviousSlot = timeSinceStartSlot;        //save time for next calculation
@@ -152,9 +169,9 @@ ISR(INT0_vect)
   }
 }                                         //end of ISR(INT0_vect)
 // PID Tuning parameters
-float Kp = 1;   //Proportional Gain
-float Ki = 2;   //Integral Gain
-float Kd = 5;   //Differential Gain
+double Kp = 0.1;     //Proportional Gain
+double Ki = 0.10;     //Integral Gain
+double Kd = 0.50;     //Differential Gain
 double setpoint = 0, input = 0, output = 0;     //These are variables accessed by the PID Compute() function and code in the main loop, assume all stopped at startup
 
 /* define PID Loops, Input is our PV, Output is our u(t), Setpoint is our SP */
@@ -203,21 +220,26 @@ void setup(void)
   TIMSK2 = _BV(TOIE2);
 
   /* Set up digital input interrupts for the slotted disk input
-    uses digital pin 5, this is ATmega PD5 PCINT21 OC0B/T1
+    uses digital pin 2, this is ATmega PD2 PCINT18/INT0
+    use as INT0, used this rather than one of PCINT0..23 interrupts as easier to set up
   */
 
-  pinMode(SensorDiskPin, INPUT);          // equivalent to DDRD  &= ~(1 << DDD5)clear the PD5 pin, so PD5 is now an input
-  //  digitalWrite(SensorDiskPin, HIGH);  //turn on pullup register
-  EICRA  |= (1 << ISC00);                 //set to trigger on any logic change
-  EIMSK  |= (1 << INT0);                  //enable interrupts on INT0
+  pinMode(SensorDiskPin, INPUT);          //set pin as input, did not enable pullup resistor as not sure how much current sensor can sink
+  PCICR  |= (1 << PCIE1);                 //"Pin Change Interrupt Control Register", pin change interrupts enabled on PCINT[14:8]
+  PCMSK1 |= (1 << PCINT10);               //"Pin Change Mask Register", enable pin change interrupt on PCINT10
 
+  //  pinMode(SensorDiskPin, INPUT);      //set pin as input, did not enable pullup resistor as not sure how much current sensor can sink
+  //  EICRA  |= (1 << ISC00);             //External Interrupt Control Register A, set to trigger on any logic change
+  //  EIMSK  |= (1 << INT0);              //External Interrupt Mask Register, enable interrupts on INT0
   sei();                                  //enable interrupts
+
   /* set up PID */
-  myPID. SetSampleTime(JoyStickScanRate * JoystickToPidSampleTime);   //set how often run PID as a multiple of JoystickScanRate, so PID run less often than rate scan joystick
-  myPID.SetMode(AUTOMATIC);               //Turn on the PID loop
+  myPID.SetSampleTime(JoyStickScanRate);      //set how often run PID same as JoystickScanRate
+  myPID.SetOutputLimits(0, (double)MaxPower); //set range of PID output
+  myPID.SetMode(AUTOMATIC);                   //Turn on the PID loop
 
 #ifdef HardwareTest
-  myHardwareTests.displayHelpMsg();                                 //on startup print command help message
+  myHardwareTests.displayHelpMsg();       //on startup print command help message if hardware test enabled
 #endif
   return;
 }  //  end of setup()
@@ -233,15 +255,14 @@ void loop(void) {
   while (Serial.available () > 0)                                         //run hardware test, this code is normally only used for setup of H/W, and normally not compiled
     myHardwareTests.processIncomingByte (Serial.read ());                 //read typed input from serial monitor
   if (myHardwareTests.motorCommandEntered()) {                            //check if a new command has been entered
-    left_Motor.updatePower((uint8_t)myHardwareTests.getLeftTestSpeed());  //yes, update motor power from the entered speed
-    left_Motor.updateDir(myHardwareTests.getLeftTestDir());               //update motor dir from the entered direction
-    right_Motor.updatePower((uint8_t)myHardwareTests.getRightTestSpeed());//update motor power from the entered speed
+    left_Motor.updatePower(myHardwareTests.getLeftTestSpeed());           //yes, update motor power from the entered speed
+    left_Motor.updateDir(!myHardwareTests.getLeftTestDir());              //update motor dir from the entered direction, complemented as motors orinetated by 180 degrees
+    right_Motor.updatePower(myHardwareTests.getRightTestSpeed());         //update motor power from the entered speed
     right_Motor.updateDir(myHardwareTests.getRightTestDir());             //update motor dir from the entered direction
     myHardwareTests.clearMotorCommandEnteredFlag();                       //clear flag ready for the next command
 
     Serial.print("Leftspeed:"); Serial.print(myHardwareTests.getLeftTestSpeed()); Serial.print(" Rightspeed:"); Serial.print(myHardwareTests.getRightTestSpeed());
-    Serial.print(" Leftdir:");  Serial.print(myHardwareTests.getLeftTestDir());   Serial.print(" Rightdir:");   Serial.print(myHardwareTests.getRightTestDir());
-    Serial.print(" Leftpower:"); Serial.print(left_Motor.getPower()); Serial.print(" Rightpower:"); Serial.println(right_Motor.getPower());
+    Serial.print(" Leftdir:");  Serial.print(myHardwareTests.getLeftTestDir());   Serial.print(" Rightdir:");   Serial.println(myHardwareTests.getRightTestDir());
   }
   if (myHardwareTests.getJoystickDisplayTime())                                             //if non zero time, display both joystick axis
     if ((millis() - joys_Time_Of_Last_Scan) > myHardwareTests.getJoystickDisplayTime()) {   //check if enough time elaspsed since last time to display joystick x and y axis
@@ -255,63 +276,87 @@ void loop(void) {
       lastSensorState = state;                                            //save new state
     }
   }                                                                       //end hardware tests
-
 #else
-  if ((millis() - joys_Time_Of_Last_Scan) > JoyStickScanRate) { //run normal program, check if time to scan joystick for changes to x and y axis
-    joys_Time_Of_Last_Scan = millis();          //yes, save time joystick last scanned, calculate the speed and then check x and Y axis for changes
-    /* check if a valid slot under the sensor */
-    unsigned long tmp = 0;                      //used to store the timing data from the ISR
-    cli();                                      //disable interrupts as about to read variables accessed by ISR
-    if (validSlotUnderSensor) {                 //get state of speed sensor that is set by the ISR
-      tmp = timeBetweenSlots;                   //just had a valid slot under the sensor, get the time between slots calculated by the ISR
-      validSlotUnderSensor = false;             //clear flag, this is set by the ISR
+  if ((millis() - joys_Time_Of_Last_Scan) <= JoyStickScanRate)  //run normal program, check if time to scan joystick for changes to x and y axis
+    return;                                   //no, not yet time to scan so return
+  joys_Time_Of_Last_Scan = millis();          //yes, save time joystick last scanned, calculate the speed and then check x and Y axis for changes
+
+  /* check if a valid slot has been under the sensor, if so calculate GoKart speed */
+  unsigned long tmp = 0;                      //used to store the timing data from the ISR
+  cli();                                      //disable interrupts as about to read variables accessed by ISR
+  if (validSlotUnderSensor) {                 //get state of speed sensor that is set by the ISR
+    tmp = timeBetweenSlots;                   //just had a valid slot under the sensor, get the time between slots calculated by the ISR
+    validSlotUnderSensor = false;             //clear flag, this is set by the ISR
+  }
+  sei();                                      //interrupts back on
+  if (tmp)                                    //check if a valid time
+    goKartSpeed = mySlottedDisk.calculateSpeed(tmp);                                    //yes, calculate wheel speed in mm/sec
+  else if (millis() - mySlottedDisk.getTimeSinceLastSpeedCalculation() > noSlotForTime) //check we have regular slots detected, by checking time between speed calculations
+    goKartSpeed = mySlottedDisk.calculateSpeed(0);                                      //if no speed calculations after this time assume GoKart is stopped
+
+  /*check if x axis or y axis of joystick has changed
+    if one has changed, as y determines speed forwards or backwards, always process y before x
+    use the y speed to firstly set the speed and direction for either forwards or backwards,
+    then use x to increase or decrease the speed of the left or right wheels to enable turning;
+    to turn, slow down the wheel of the direction you want to turn and leave the other wheel unchanged
+  */
+  if (js.check_X_Axis() || js.check_Y_Axis()) {     //check if x axis or y axis of joystick has changed
+    js.process_Y(&yReqSpeed, &yDir);                //yes, get requested speed and direction for y axis
+    if (yDir == BACK)                               //check if direction is BACK or reverse
+      yReqSpeed = yReqSpeed / ReverseSpeedSlower;   //yes, slow down reverse speed as a safety measure
+    js.process_X(&xTurningDegrees, &xDir);          //get position of x axis?
+    MAIN_LOOP_DEBUG_PRINT(__FUNCTION__, " xTurningDegrees:", xTurningDegrees, " xDir:", xDir, " yReqSpeed:", yReqSpeed, " yDir:", yDir); //if MAIN_LOOP_DEBUG defined print to serial monitor
+  }
+
+  /* run PID
+     PID function has the addresses of Input, Setput, & Output variables and these updated in Compute()
+     if PID did a computation, get the output and calculate left and right motor power, and update PWM outputs to the motor
+     to prevent possible damage to motors, before update direction check if there is a change of direction and only allow if motors at a low power level
+  */
+  input     = (double)goKartSpeed;                  //get input ready for pid
+  setpoint  = (double)yReqSpeed;                    //get setpoint ready for PID
+
+  if (myPID.Compute()) {                                               //check if PID loop did a computation, ie in automatic and internal timer has expired
+    PID_DEBUG_PRINT("setpoint:", setpoint, " input:", input, " output:", output); //if PID_DEBUG_PRINT defined print out results to the serial monitor
+    leftPower = rightPower = (uint8_t) output;                        //yes, update power from PID to each wheel taking account of turn request from the x axis
+    if (xTurningDegrees != 0 && xDir == LEFT)                         //is it a request to turn and the request is to the left
+      leftPower = (uint8_t)map(xTurningDegrees, 90, 0, 0, output);    //yes, slow left wheel, by reducing the power by the amount of turning degrees, & leave right wheel unchanged
+    else if (xTurningDegrees != 0 && xDir == RIGHT)                   //no, check if a request to move right
+      rightPower = (uint8_t)map(xTurningDegrees, 90, 0, 0, output);   //yes, slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
+
+    MAIN_LOOP_DEBUG_PRINT("     input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " "); //if MAIN_LOOP_DEBUG defined print to serial monitor
+    left_Motor.updatePower(leftPower);                  //update motor power from the PID output after taking into account turning
+    right_Motor.updatePower(rightPower);                //update motor speed from the requested speed after taking into account turning
+    if (checkOkToChangeDir(yDir, (uint8_t)output)) {    //check ok to change direction, so only cchange direction at low power
+      right_Motor.updateDir(yDir);                      //update motor direction from y axis as determines forwards or back
+      left_Motor.updateDir(yDir);                      //update motor direction from y axis as determines forwards or back, complimented as motors orinentated by 180 degrees
+      currentDir = yDir;                                //save new direction
     }
-    sei();                                      //interrupts back on
-    if (tmp)                                    //check if a slot has been under the sensor
-      goKartSpeed = mySlottedDisk.calculateSpeed(tmp);        //yes, calculate wheel speed
-
-    if (js.check_X_Axis() || js.check_Y_Axis()) { //check if x axis or y axis of joystick has changed
-      /* yes one has changed, so as y determines speed forwards or backwards, always process y before x
-        use the y speed to firstly set the speed and direction for either forwards or backwards,
-        then use x to increase or decrease the speed of the left or right wheels to enable turning;
-        to turn, slow down the wheel of the direction you want to turn and leave the other wheel unchanged */
-
-      js.process_Y(&yReqSpeed, &yDir);                //yes, get requested speed and direction for y axis
-      if (yDir == BACK)                               //check if direction is BACK or reverse
-        yReqSpeed = yReqSpeed / ReverseSpeedSlower;   //yes, slow down reverse speed as a safety measure
-      js.process_X(&xTurningDegrees, &xDir);          //get position of x axis?
-      MAIN_LOOP_DEBUG_PRINT(__FUNCTION__, " xTurningDegrees:", xTurningDegrees, " xDir:", xDir, " yReqSpeed:", yReqSpeed, " yDir:", yDir);   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
-    }
-    input     = map((double) goKartSpeed, 0, MaxSpeedmmPerSec, 0, MaxPower);     //Get current goKart speed and change the scale to the PWM power output scale
-    setpoint  = map((double) yReqSpeed,   0, MaxSpeedmmPerSec, 0, MaxPower);     //get setpoint requested by the joystick and change the scale to the PWM power output scale
-
-    if (myPID.Compute()) {                                            //Run the PID loop, and check something has changed, PID function has the addresses of Input, Setput, and Output variables so these updated from within the Compute()
-      leftPower = (uint8_t) output; rightPower = (uint8_t) output;    //yes, now have the output power from the PID, update power to each wheel taking account of turn request from the x axis
-      if (xTurningDegrees != 0 && xDir == LEFT)                       //is it a request to turn and the request is to the left
-        leftPower = map( xTurningDegrees, 90, 0, 0, output);          //yes, slow left wheel, by reducing the power by the amount of turning degrees, & leave right wheel unchanged
-      else if (xTurningDegrees != 0 && xDir == RIGHT)                 //no, check if a request to move right
-        rightPower = map( xTurningDegrees, 90, 0, 0, output);         //yes, slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
-
-      MAIN_LOOP_DEBUG_PRINT("     input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " ");   //if MAIN_LOOP_DEBUG defined print out results to the serial monitor
-      left_Motor.updatePower(leftPower);            //update motor power from the PID output after taking into account turning
-      left_Motor.updateDir(yDir);                   //update motor direction from the y axis as it determines forwards or backwards
-      right_Motor.updatePower(rightPower);          //update motor speed from the requested speed after taking into account turning
-      right_Motor.updateDir(yDir);                  //update  motor direction from the y axis as it determines forwards or backwards
-    }
-  }                                                 // end of normal code
+  }                                                     //end of normal code
 #endif
-}
-void toggleLed(void)
-{
-  led ? led = LOW : led = HIGH;              //swap led state from high to low or low to high
-  digitalWrite(LedPin, led);                 //update the led
+}                                                       //end of main loop
+
+
+void toggleLed(void) {
+  led ? led = LOW : led = HIGH;             //swap led state from high to low or low to high
+  digitalWrite(LedPin, led);                //update the led
 }                                           //end of toggleLed(void)
 
-void reset_Counter(void)
-{
-  cli();                                     //interrupts off
-  interrupt_Counter = 0;                     //reset counter
-  sei();                                     //interrupts on
+
+void reset_Counter(void) {
+  cli();                                    //interrupts off
+  interrupt_Counter = 0;                    //reset counter
+  sei();                                    //interrupts on
 }                                           //end of reset_Counter(void)
 
+
+//checkOkToChangeDir - return false if changing direction and we are above specified power level to the motors
+//to prevent damage to the motors
+
+bool checkOkToChangeDir(bool newDir, uint8_t myPower) {
+  if (currentDir != newDir && myPower > LowPower )
+    return false;                            //not changing direction
+  else
+    return true;
+}
 

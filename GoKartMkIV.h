@@ -5,15 +5,15 @@
 
 #include "arduino.h"
 
-/* define to run hardware tests, alows manually to enter speeds 
+/* define to run hardware tests, alows manually to enter speeds ,monitor joystick and sensor
  * does not run normal code
  * comment out to run normal code
  */
 
 //if HardwareTest defined, compile the HardwareTest code, otherwise ignore and compile normal code
-#define HardwareTest
+//#define HardwareTest
 
-/* define to run joystick diagnostics which which read the joystick and print to the serial monitor
+/* define to run joystick code debugging which which read the joystick and print to the serial monitor
   comment out before code is released
 */
 //#define  JOYSTICK_DEBUG
@@ -24,19 +24,18 @@
 #define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)
 #endif
 
-/* define to run joystick diagnostics for process joystick Y axis and print to the serial monitor
+/* define to run joystick code debugging for process joystick Y axis and print to the serial monitor
   comment out before code is released
 */
 //#define  JOYSTICK_PROCX_DEBUG
 
 #ifdef   JOYSTICK_PROCX_DEBUG
 #define  JOYSTICK_PROCX_DEBUG_PRINT(x, y, z, a, b, c)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.println(c)
-
 #else
 #define  JOYSTICK_PROCX_DEBUG_PRINT(x, y, z, a, b, c)
 #endif
 
-/* define to run joystick diagnostics which process joystick Y axis and print to the serial monitor
+/* define to run joystick code debugging which process joystick Y axis and print to the serial monitor
   comment out before code is released
 */
 //#define  JOYSTICK_PROCY_DEBUG
@@ -47,12 +46,12 @@
 #define  JOYSTICK_PROCY_DEBUG_PRINT(x, y, z, a, b, c)
 #endif
 
-/* define to run joystick diagnostics with a slow scan rate
+/* define to run joystick code debugging with a slow scan rate
   comment out before code is released
 */
 //#define JOYSTICK_DEBUG_SCAN
 
-/* define to run joystick diagnostics which force a value from the joystick
+/* define to run joystick code debugging which force a value from the joystick
   comment out before code is released
 */
 //#define  JOYSTICK_FORCEDEBUG
@@ -65,20 +64,20 @@
 #define  JOYSTICK_DEBUG_X_EQUALS_256
 #endif
 
-/* define to run motor diagnostics which print to the serial monitor
+/* define to run motor code debugging which print to the serial monitor
   comment out before code is released
 */
-#define  MOTOR_DEBUG
+//#define  MOTOR_DEBUG
 #ifdef   MOTOR_DEBUG
 #define  MOTOR_DEBUG_PRINT(x, y, z)    Serial.print(x);  Serial.print(y);  Serial.println(z)
 #else
 #define  MOTOR_DEBUG_PRINT(x, y, z)
 #endif
 
-/* define to run sensor diagnostics which print to the serial monitor
+/* define to run sensor code debugging which print to the serial monitor
   comment out before code is released
 */
-#define  SENSOR_DEBUG
+//#define  SENSOR_DEBUG
 
 #ifdef   SENSOR_DEBUG
 #define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.println(b)
@@ -86,7 +85,18 @@
 #define  SENSOR_DEBUG_PRINT(x, y, z, a, b)
 #endif
 
-/* define to run main loop diagnostics which print to the serial monitor
+/* define to run PID code debugging which print to the serial monitor
+  comment out before code is released
+*/
+//#define PID_DEBUG
+
+#ifdef   PID_DEBUG
+#define  PID_DEBUG_PRINT(x, y, z, a, b, c)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.println(c)
+#else
+#define  PID_DEBUG_PRINT(x, y, z, a, b, c)
+#endif
+
+/* define to run main loop code debugging which print to the serial monitor
   comment out before code is released
 */
 //#define  MAIN_LOOP_DEBUG
@@ -97,10 +107,21 @@
 #define  MAIN_LOOP_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)
 #endif
 
-//system parameters
+/* system parameters
+ * use millimeters per second for speed rather km/hr as more resolution for type int eg 
+ * km/hr    mm/sec
+ *  2.5       694
+ *  5        1389
+ *  7.5      2083
+ * 10.0      2778
+ * 12.5      3472
+ * 15        4167
+ * 17.5      4861
+ */
 const unsigned int MaxSpeedKmh      =  5;                                       //maximum speed in km/hr
-const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec, use rather km/hr as more resolution for type int. (for 15km/hour 4,167mm/sec that is 4.5 revs/sec for 300mm diameter wheel)
+const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec
 const uint8_t      MaxPower         = 255;                                      //255 gives 100% duty cycle to the PWM, ie max power
+const uint8_t      LowPower         = MaxPower * .1;                            //Power limit below which we can change irection
 const int          ReverseSpeedSlower = 5;                                      //Slow reverse speed compared to forward speed as a safety measure
 
 /* set up directions for motors */
@@ -124,13 +145,13 @@ const unsigned int QtrSec =  490;            //used in main loop to flash led sh
 const int JoystickMin = 0;
 const int JoystickMax = 511;                      //range for a perfect joystick,
 /* set up stopped range for the joystick */
-const int     Stopped_High = 543;      //setjoystick high range for stopped
-const int     Stopped_Low  = 480;      //setjoystick low range for stopped
+const int     Stopped_High = 538;      //setjoystick high range for stopped
+const int     Stopped_Low  = 485;      //setjoystick low range for stopped
 
 // As joystick ADC reads 0 to 1023, the joystick range is:
-//    | 0-479 | 480 - 543 | 544 - 1023 |
+//    | 0-484 | 485 - 538 | 539 - 1023 |
 //    |  Low  |  Stopped  |    High    |
-//range  480      64           480
+//range  485      53           485
 //
 //                  Joystick Operation
 //         (orientation with cables at the bottom)
@@ -157,11 +178,9 @@ const unsigned long JoyStickScanRate   = 50;   //scan every 50 ms or 1/20 of a s
 const int           JoyStick_Max_ROC   = 48;   //limit rate of change allowable by the joystick (see comments above)
 #else
 /* note this is the debug version, uses a slower scan rate to limit the amount of debug data displyed on the serial monitor window*/
-const unsigned long JoyStickScanRate   = 200;   //scan every 200 ms or 1/5 of a second, (see comments above), slower for debugging
+const unsigned long JoyStickScanRate   = 500;   //scan every 500 ms or 1/2 of a second, (see comments above), slower for debugging
 const int           JoyStick_Max_ROC   = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
-
-const int JoystickToPidSampleTime       = 1;      //set ratio of when joystick is sampled to when PID is computed, should not be less than 1
 
 const int  Noise_Mask                   = 0xFFF0; //clear bottom bits to mask any noise on signal
 
@@ -173,7 +192,7 @@ const uint8_t Yaxis_JoystickAnalogPin     = 1;    //y xis of joystick
    define i/o for each motor driver board, each board has 2 inputs: direction & pwm
 */
 
-const uint8_t  leftDirPin	  = 4;                //wired to the motor driver board to set the direction the motor turns
+const uint8_t  leftDirPin	  = 2;                //wired to the motor driver board to set the direction the motor turns
 const uint8_t  leftPwmPin	  = 3;                //PWM pulse to set the speed of the motor, this is ATmega PB3 OC2A, UNO pin 11
 uint8_t* const leftPwmReg   = (uint8_t *)0xB4;  // this is OCR2B, for PWM output PD3 OC2B, UNO pin 3
 
@@ -182,13 +201,15 @@ const uint8_t  rightPwmPin	= 11;               //PWM pulse to set the speed of t
 uint8_t* const rightPwmReg  = (uint8_t *)0xB3;  // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
 
 /* define i/O for led */
-const uint8_t LedPin          =  13;      //LED connected to digital pin 13
+const uint8_t LedPin          =  13;            //LED connected to digital pin 13
 
 /* define i/O for slotted wheel
   used to determine speed of goKart
+  Slotted disk sensor connected to analogue input pin 2, this is ATmega PC2 ADC2/PCINT10
   *** NOTE *** 
   ISR has to be changed if the SensorDsikPin is changed
 */
-const uint8_t SensorDiskPin =  2;         //Slotted disk sensor connected to digital pin 2, this is ATmega PD2 PCINT18/INT0
+#define SensorDiskPin  A2
+const unsigned long noSlotForTime = 2000;       //if no valid slots for this period, assume GoKart is stopped         
 
 #endif

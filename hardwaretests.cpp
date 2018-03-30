@@ -12,12 +12,14 @@
      Ds display sensor input state if there is change in state, if error stop the display
 */
 
+HardwareTests::HardwareTests() {
+  leftWheelSpeed = 0;             //ensure stopped at start
+  leftWheelDir = FORWARD;         //initialise direction to forward
+  rightWheelSpeed = 0;
+  rightWheelDir = FORWARD;
+}                                 //end of constructor HardwareTests()
 
 //displayHelpMsg -
-HardwareTests::HardwareTests() {
-}                                     //end of constructor HardwareTests()
-
-
 void HardwareTests::displayHelpMsg(void) {
   Serial.println("*** Ensure 'Newline' is selected in the bottom dropdown menu ***");
   Serial.println("Ls set speed of left motor,  s = 0 to 255, if error s = 0");
@@ -25,7 +27,8 @@ void HardwareTests::displayHelpMsg(void) {
   Serial.println("Ld set direction of left motor,  d = f or b, forwards/backwards, if error d = forwards");
   Serial.println("Ld set direction of right motor, d = f or b, forwards/backwards, if error d = forwards");
   Serial.println("Dz display joystick x and y axis every z milliseconds, if error z = 0");
-  Serial.println("Ds display sensor input state each time changes, if error stop the display ");
+  Serial.println("Ds display sensor input state each time changes, if error stop the display");
+  Serial.println("H display this message");
 }                                                                                                 //end of displayHelpMsg()
 
 
@@ -73,6 +76,10 @@ void HardwareTests::processData() {
         HardwareTests::processDisplaySensorCommand();
       break;
 
+    case 'H':                         //check if to display help message
+      HardwareTests::displayHelpMsg();
+      break;
+
     default:                        //ignore
       break;
   }                                 //end of switch
@@ -80,13 +87,12 @@ void HardwareTests::processData() {
 }                                   //end of processData()
 
 
-//processSpeedCommand - get the speed typed, convert to int and check the range, if error return zero
-unsigned int HardwareTests::processSpeedCommand() {
-  uint8_t i = (uint8_t)inString.substring(1).toInt(); //get the specified speed after the command character
-  if (i > MaxPower)                 //check in the correct range
-    i = 0;                          //no, then return zero which will stop the motor
-  motorCommandEnteredFlag = true; //set flag to say we have a new motor command
-  return i;
+//processSpeedCommand - get the speed typed and check the range, if error return zero
+uint8_t HardwareTests::processSpeedCommand() {
+  if (inString.substring(1).toInt() > (long)MaxPower)     //get the specified speed after the command character, check in the correct range
+    return 0;                                             //no, then return zero which will stop the motor
+  motorCommandEnteredFlag = true;                         //set flag to say we have a new motor command
+  return (uint8_t)inString.substring(1).toInt();
 }
 
 

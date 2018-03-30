@@ -44,15 +44,15 @@ bool Motor::getDir(void)
 
 
 /* updatePower
-   updates the current powerto the motor by writting to PWM register
+   updates the current power to the motor by writting to PWM register
 */
 void Motor::updatePower(uint8_t power)
 {
-  MOTOR_DEBUG_PRINT(__FUNCTION__, " myPower:", myPower);
-  MOTOR_DEBUG_PRINT(__FUNCTION__, " myDir:", myDir);
-
   myPower = power;
   * pwm_Reg = myPower;                 //output power to update PWM duty cycle
+
+  MOTOR_DEBUG_PRINT(__FUNCTION__, " myPower:", myPower);
+  MOTOR_DEBUG_PRINT(__FUNCTION__, " myDir:", myDir);
 }
 
 

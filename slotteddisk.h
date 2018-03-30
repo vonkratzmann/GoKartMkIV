@@ -42,17 +42,18 @@ class SlottedDisk
     bool      debouncedState;         //stores deounced state
     unsigned long   myTimeBetweenSlots [3] = {0, 0, 0};     //store last three values and average to calculate speed
     int             slotTimeCounter;
-    unsigned int    wheelSpeedmmPerSec = 0;                 //wheel speed in millmeters per second, use mm/sec units as provides appropiate size numbers to use a type integer, eg 15km/hr = 4,167mm/sec
-
+    unsigned int    wheelSpeedmmPerSec = 0;                 //speed in millmeters/second, used as provides appropiate size numbers using type integer, eg 15km/hr = 4,167mm/sec
+    unsigned long   timeSinceLastSpeedCalculation;          //record time last calculated speed, used to check if gokart is stopped
   public:
     /* Slotted wheel ISR variables*/
     unsigned long timeBetweenSlots, timeSinceStartSlot;
     bool validSlotUnderSensor;
     
-    SlottedDisk(uint8_t);	                            //constructor
-    unsigned int  calculateSpeed(unsigned long);      //calculate speed of the wheel
-    unsigned int  getSpeed(void);                     //get speed of the wheel
-    boolean       getSensorState(void);               //get state of sensor without and debouncing or noise processing
+    SlottedDisk(uint8_t);	                                //constructor
+    unsigned int  calculateSpeed(unsigned long);          //calculate speed of the wheel
+    unsigned int  getSpeed(void);                         //get speed of the wheel
+    boolean       getSensorState(void);                   //get state of sensor without and debouncing or noise processing
+    unsigned long getTimeSinceLastSpeedCalculation(void); //get time since last calculated the speed
 };
 #endif
 

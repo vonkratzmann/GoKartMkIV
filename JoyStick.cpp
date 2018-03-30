@@ -104,23 +104,19 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
 */
 void JoyStick::process_X(unsigned int *turningDegrees, bool *new_Dir)            //process change for x axis of joystick
 {
-  if (x_Cur <= Stopped_High && x_Cur >= Stopped_Low)                   //check if in the stopped range
-  {
-    *turningDegrees = 0;                                                //yes, so update turning percent to 0 precent, no need to set direction
+  if (x_Cur <= Stopped_High && x_Cur >= Stopped_Low) {              //check if in the stopped range
+    *turningDegrees = 0;                                            //yes, so update turning percent to 0 precent, no need to set direction
     JOYSTICK_PROCX_DEBUG_PRINT(__FUNCTION__, " (stopped)", " turningDegrees:", *turningDegrees, " ", " ");  //if joystick_procx_debug defined prints out results on serial monitor
   }
-  else                                                          //no, joystick requesting movement
-  {
-    if (x_Cur > Stopped_High)                                    //is joystick asking to move to left
-    {
-      *new_Dir = LEFT;                                          //yes, moving to left
-      *turningDegrees = map(x_Cur, Stopped_Low - 1, 0, 0, 90);  //Scale joystick position to turning range of 0 to 90 degrees
+  else {                                                            //no, joystick requesting a turn
+    if (x_Cur > Stopped_High) {                                     //is joystick asking to move to left
+      *new_Dir = LEFT;                                              //yes, moving to left
+      *turningDegrees = map(x_Cur, Stopped_High - 1, 1023, 0, 90);  //Scale joystick position to turning range of 0 to 90 degrees
       JOYSTICK_PROCX_DEBUG_PRINT(__FUNCTION__, " (low)", " turningDegrees:", *turningDegrees, " new_Dir:", *new_Dir);  //if joystick_procx_debug defined prints out results on serial monitor
     }
-    else                                                            //no, request to move to right
-    {
+    else {                                                          //no, request to move to right
       *new_Dir = RIGHT;
-      *turningDegrees = map(x_Cur, Stopped_High + 1, 1023, 0, 90); //Scale joystick position to turning range of 0 to 90 degrees
+      *turningDegrees = map(x_Cur, Stopped_Low + 1, 0, 0, 90);      //Scale joystick position to turning range of 0 to 90 degrees
       JOYSTICK_PROCX_DEBUG_PRINT(__FUNCTION__, " (high)", " turningDegrees:", *turningDegrees, " new_Dir:", *new_Dir);
     }
   }

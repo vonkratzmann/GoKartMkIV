@@ -24,7 +24,7 @@ class HardwareTests
     HardwareTests ();
     void          processIncomingByte(const byte);
     void          processData (void);
-    unsigned int  processSpeedCommand(void);
+    uint8_t       processSpeedCommand(void);
     bool          processDirectionCommand(void);
     uint8_t       getLeftTestSpeed(void);
     uint8_t       getRightTestSpeed(void);
