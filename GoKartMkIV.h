@@ -11,7 +11,7 @@
  */
 
 //if HardwareTest defined, compile the HardwareTest code, otherwise ignore and compile normal code
-//#define HardwareTest
+#define HardwareTest
 
 /* define to run joystick code debugging which which read the joystick and print to the serial monitor
   comment out before code is released
@@ -130,9 +130,6 @@ const int          ReverseSpeedSlower = 5;                                      
 #define RIGHT       true
 #define LEFT        false
 
-const unsigned int OneSec = 1960;            //used in main loop to show the ISR is running, flip flops led off and on each second
-const unsigned int QtrSec =  490;            //used in main loop to flash led show for a quarter of a second
-
 /* joystick Parameters */
 
 /* Regard joystick in stopped position if equal to or between Joys_Stopped_High & Joys_Stopped_Low
@@ -145,8 +142,8 @@ const unsigned int QtrSec =  490;            //used in main loop to flash led sh
 const int JoystickMin = 0;
 const int JoystickMax = 511;                      //range for a perfect joystick,
 /* set up stopped range for the joystick */
-const int     Stopped_High = 538;      //setjoystick high range for stopped
-const int     Stopped_Low  = 485;      //setjoystick low range for stopped
+const int Stopped_High = 538;                     //setjoystick high range for stopped
+const int Stopped_Low  = 485;                     //setjoystick low range for stopped
 
 // As joystick ADC reads 0 to 1023, the joystick range is:
 //    | 0-484 | 485 - 538 | 539 - 1023 |
@@ -185,8 +182,8 @@ const int           JoyStick_Max_ROC   = 48;    //limit rate of change allowable
 const int  Noise_Mask                   = 0xFFF0; //clear bottom bits to mask any noise on signal
 
 /* ADC I/O for Joystick*/
-const uint8_t Xaxis_JoystickAnalogPin     = 0;    //x axis of joystick
-const uint8_t Yaxis_JoystickAnalogPin     = 1;    //y xis of joystick
+const uint8_t Xaxis_JoystickAnalogPin   = 0;      //x axis of joystick
+const uint8_t Yaxis_JoystickAnalogPin   = 1;      //y xis of joystick
 
 /** motors
    define i/o for each motor driver board, each board has 2 inputs: direction & pwm
@@ -201,7 +198,7 @@ const uint8_t  rightPwmPin	= 11;               //PWM pulse to set the speed of t
 uint8_t* const rightPwmReg  = (uint8_t *)0xB3;  // this is OCR2A, for PWM output PD3 OC2A, UNO pin 11
 
 /* define i/O for led */
-const uint8_t LedPin          =  13;            //LED connected to digital pin 13
+const uint8_t LedPin        =  13;              //LED connected to digital pin 13
 
 /* define i/O for slotted wheel
   used to determine speed of goKart

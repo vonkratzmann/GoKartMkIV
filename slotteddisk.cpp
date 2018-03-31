@@ -3,9 +3,9 @@
 
 /*
    Sensor disk has slots and as the disk rotates, sensor picks up if a slot is present or not
-   Reads sensor pin , debounces state of the sensor and calculates speed of the wheel
-   Averages the last 3 readings for the time between slots to calculate the speed
-   time between slots is calculated by the ISR from the sensor pin
+   ISR is set up in main loop which interrupts on a change of state of the sensor input
+   The ISR reads the sensor pin, checks for noise, debounces the state of the sensor and then calculates the time bewteen slots
+   Functions below, calculates speed of the wheel by averaging the last 3 readings for the time between slots
 */
 
 /* SlottedDisk constructor
@@ -40,6 +40,9 @@ unsigned int SlottedDisk::getSpeed(void) {
 
 
 //get sensor state
+/* used to read sensor state, calculation of time between slots is done by the interrupt 
+ * this function is not used by the ISR, this is used for hardware testing
+ */
 boolean SlottedDisk::getSensorState() {
   return digitalRead(SensorDiskPin);
 }                            //end of getSensorState

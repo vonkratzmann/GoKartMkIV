@@ -91,7 +91,7 @@
 #include "hardwaretests.h"
 #include <PID_v1.h>
 
-unsigned int  interrupt_Counter = 0;          //used in main loop to show the ISR is running
+unsigned int  ledFlashCounter = 0;            //used in main loop to show the program is running by flashing the led
 unsigned long joys_Time_Of_Last_Scan = 0;     //track when we last scanned for joystick changes
 unsigned int  goKartSpeed = 0;                //stores speed of GoKart
 
@@ -121,15 +121,6 @@ Motor right_Motor(rightPwmReg, rightDirPin, rightPwmPin);
 /* define slotted disk */
 SlottedDisk mySlottedDisk(SensorDiskPin);
 
-/* Interrupt Service Routine for when counter overflows in timer 2
-    used only for timing purposes */
-
-ISR(TIMER2_OVF_vect)
-{
-  interrupt_Counter = interrupt_Counter + 1;        //used to show we are alive and ISR running
-  return;
-}
-
 /*
    Slot detector ISR
    interrupts on change of state of input from slotted wheel sensor
@@ -137,7 +128,8 @@ ISR(TIMER2_OVF_vect)
    when a slot is under the sensor, the signal is high
    on rising edge records the time in microseconds
    on a falling edge, check how long it has been in the high state and if the sensor has been stable in the high state ie for the debounce period
-   says that a valid slot has been under the sensor, calculates the time between slots, and sets the flag for the main loop to read and process
+   says that a valid slot has been under the sensor, calculates the time between slots, stores the time for this valid slot for when we get the next slot
+   and sets the flag for the main loop to read and process
    Uses function micros() rather than millis() as with some disks with 100 slots the time between slots is only a few milliseconds.
    At the moment ignore the fact that the microseconds will overflow in 70 minutes
 */
@@ -169,7 +161,7 @@ ISR(PCINT1_vect)
   }
 }                                         //end of ISR(INT0_vect)
 // PID Tuning parameters
-double Kp = 0.1;     //Proportional Gain
+double Kp = 0.1;      //Proportional Gain
 double Ki = 0.10;     //Integral Gain
 double Kd = 0.50;     //Differential Gain
 double setpoint = 0, input = 0, output = 0;     //These are variables accessed by the PID Compute() function and code in the main loop, assume all stopped at startup
@@ -186,10 +178,10 @@ void setup(void)
 
   Serial.begin(9600);             //set up serial port for any debug prints
 
-  /* Set up timer interrupt
+  /* Set up PWM
     Timer 0, is 8 bits used by fuction millis();
-    Timer 2, is 8 bits and is used to generate an interrupt approximately every 500 microseconds and to process pwm pulses to motors
-    Timer is 16x10^6 (clock speed) / [prescaler x 255];  for prescaler of 32, frequeny of interrupts and PWM is 1.960kHz
+    Timer 2, is 8 bits and is used to process pwm pulses to motors
+    Timer is 16x10^6 (clock speed) / [prescaler x 255];  for prescaler of 32
     Use fast PWM mode, where the timer repeatedly counts from 0 to 255. The output turns on when the timer is at 0, and turns off when the timer matches the output compare register OCR2A and OCR2B.
     The higher the value in the output compare register, the higher the duty cycle.
 
@@ -205,10 +197,7 @@ void setup(void)
     //TIMSK2 – Timer/Counter2 Interrupt Mask Register
     // Bit  |    7     |    6     |    5     |    4     |     3   |  2       |    1     |    0    |
     //      |    -     |    -     |    -     |    -     |    -    | OCIE2B   |  OCIE2A  |  TOIE2  |
-  */
-  cli();                                      //stop interrupts
 
-  /*
     On TCCR2A, setting the COM2A bits and COM2B bits to 10 provides non-inverted PWM for outputs A and B,
     Clears OC2A & OC2B on Compare Match, set OC2A & OC2B at BOTTOM,
     setting the waveform generation mode bits WGM to 011 selects fast PWM
@@ -216,8 +205,6 @@ void setup(void)
   TCCR2A = _BV(COM2A1) | _BV(COM2B1) | _BV(WGM21) | _BV(WGM20);
   /* On TCCR2B, setting the CS bits to 011 sets the prescaler to divide the clock by 32 */
   TCCR2B  = _BV(CS21) | _BV(CS20);
-  /* On TIMSK2, setting the TOIE2 bits to 1 enables the Timer/Counter2 Overflow interrupt. */
-  TIMSK2 = _BV(TOIE2);
 
   /* Set up digital input interrupts for the slotted disk input
     uses digital pin 2, this is ATmega PD2 PCINT18/INT0
@@ -241,16 +228,33 @@ void setup(void)
 #ifdef HardwareTest
   myHardwareTests.displayHelpMsg();       //on startup print command help message if hardware test enabled
 #endif
+
+  ledFlashCounter = millis();             //set up counter to flash led every second
   return;
 }  //  end of setup()
 
 /*** Main Loop ***/
 
 void loop(void) {
-  if (interrupt_Counter >= OneSec ) {
+  if (millis() - ledFlashCounter >= 1000 ) {
     toggleLed();                              //yes, flash the led, to show something is happening
-    reset_Counter();                          //reset counter
-  }                                           //run hardware tests or normal main loop code, if HardwareTest defined, run the HardwareTest code, otherwise run normal main loop code
+    ledFlashCounter = millis();               //reset counter
+  }
+
+  /* check if a valid slot has been under the sensor, if so calculate GoKart speed */
+  unsigned long slotTime = 0;                 //used to store the timing data from the ISR
+  cli();                                      //disable interrupts as about to read variables accessed by ISR
+  if (validSlotUnderSensor) {                 //get state of speed sensor that is set by the ISR
+    slotTime = timeBetweenSlots;              //just had a valid slot under the sensor, get the time between slots calculated by the ISR
+    validSlotUnderSensor = false;             //clear flag, this is set by the ISR
+  }
+  sei();                                      //interrupts back on
+  if (slotTime)                               //check if a valid time
+    goKartSpeed = mySlottedDisk.calculateSpeed(slotTime);                               //yes, calculate wheel speed in mm/sec
+  else if (millis() - mySlottedDisk.getTimeSinceLastSpeedCalculation() > noSlotForTime) //no, check time we last had a slot detected, by checking time between speed calculations
+    goKartSpeed = mySlottedDisk.calculateSpeed(0);                                      //no slot for a nominated time, assume we are stopped
+
+  //run hardware tests or normal main loop code, if HardwareTest defined, run the HardwareTest code, otherwise run normal main loop code
 #ifdef HardwareTest
   while (Serial.available () > 0)                                         //run hardware test, this code is normally only used for setup of H/W, and normally not compiled
     myHardwareTests.processIncomingByte (Serial.read ());                 //read typed input from serial monitor
@@ -272,7 +276,8 @@ void loop(void) {
   if (myHardwareTests.getSensorDisplayFlag()) {                           //check if to display sensor
     bool state = mySlottedDisk.getSensorState();
     if (lastSensorState != state) {                                       //has sensor state changed?
-      Serial.print("Sensor state:"); Serial.println(state);               //yes, print out the state
+      Serial.print("Sensor:"); Serial.print(state);                     //yes, print out the state and time measured by the isr
+      Serial.print(" Time:"); Serial.println(slotTime);
       lastSensorState = state;                                            //save new state
     }
   }                                                                       //end hardware tests
@@ -281,18 +286,7 @@ void loop(void) {
     return;                                   //no, not yet time to scan so return
   joys_Time_Of_Last_Scan = millis();          //yes, save time joystick last scanned, calculate the speed and then check x and Y axis for changes
 
-  /* check if a valid slot has been under the sensor, if so calculate GoKart speed */
-  unsigned long tmp = 0;                      //used to store the timing data from the ISR
-  cli();                                      //disable interrupts as about to read variables accessed by ISR
-  if (validSlotUnderSensor) {                 //get state of speed sensor that is set by the ISR
-    tmp = timeBetweenSlots;                   //just had a valid slot under the sensor, get the time between slots calculated by the ISR
-    validSlotUnderSensor = false;             //clear flag, this is set by the ISR
-  }
-  sei();                                      //interrupts back on
-  if (tmp)                                    //check if a valid time
-    goKartSpeed = mySlottedDisk.calculateSpeed(tmp);                                    //yes, calculate wheel speed in mm/sec
-  else if (millis() - mySlottedDisk.getTimeSinceLastSpeedCalculation() > noSlotForTime) //check we have regular slots detected, by checking time between speed calculations
-    goKartSpeed = mySlottedDisk.calculateSpeed(0);                                      //if no speed calculations after this time assume GoKart is stopped
+  //if no speed calculations after this time assume GoKart is stopped
 
   /*check if x axis or y axis of joystick has changed
     if one has changed, as y determines speed forwards or backwards, always process y before x
@@ -341,13 +335,6 @@ void toggleLed(void) {
   led ? led = LOW : led = HIGH;             //swap led state from high to low or low to high
   digitalWrite(LedPin, led);                //update the led
 }                                           //end of toggleLed(void)
-
-
-void reset_Counter(void) {
-  cli();                                    //interrupts off
-  interrupt_Counter = 0;                    //reset counter
-  sei();                                    //interrupts on
-}                                           //end of reset_Counter(void)
 
 
 //checkOkToChangeDir - return false if changing direction and we are above specified power level to the motors
