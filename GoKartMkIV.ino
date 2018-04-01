@@ -89,7 +89,7 @@
 #include "motor.h"
 #include "slotteddisk.h"
 #include "hardwaretests.h"
-#include <PID_v1.h>
+#include "PID_v1.h"
 
 unsigned int  ledFlashCounter = 0;            //used in main loop to show the program is running by flashing the led
 unsigned long joys_Time_Of_Last_Scan = 0;     //track when we last scanned for joystick changes
@@ -102,7 +102,6 @@ bool          xDir = LEFT,  yDir = FORWARD;   //used in main loop
 bool          currentDir = FORWARD;           //used in main loop, to check before change direction
 
 uint8_t led = LOW;                            //state of led, initially off
-bool lastSensorState;                         //used by diagnostics
 
 /* define objects */
 
@@ -161,13 +160,13 @@ ISR(PCINT1_vect)
   }
 }                                         //end of ISR(INT0_vect)
 // PID Tuning parameters
-double Kp = 0.1;      //Proportional Gain
-double Ki = 0.10;     //Integral Gain
-double Kd = 0.50;     //Differential Gain
+double Kp = 0.10;      //Proportional Gain
+double Ki = 0.010;     //Integral Gain
+double Kd = 0.50;      //Differential Gain
 double setpoint = 0, input = 0, output = 0;     //These are variables accessed by the PID Compute() function and code in the main loop, assume all stopped at startup
 
 /* define PID Loops, Input is our PV, Output is our u(t), Setpoint is our SP */
-PID myPID(&input, &output, &setpoint, Kp, Ki, Kd, P_ON_E, DIRECT);          //constructor also call set tunnings
+PID myPID(&input, &output, &setpoint, Kp, Ki, Kd);          //constructor also call set tunnings
 
 /** Setup */
 void setup(void)
@@ -194,10 +193,6 @@ void setup(void)
     // Bit  |    7     |    6     |    5     |    4     |    3    |    2    |    1   |    0   |
     //      |  FOC2A   |  FOC2B   |    -     |    -     |  WGM22  |  CS22   |  CS21  |  CS20  |
 
-    //TIMSK2 – Timer/Counter2 Interrupt Mask Register
-    // Bit  |    7     |    6     |    5     |    4     |     3   |  2       |    1     |    0    |
-    //      |    -     |    -     |    -     |    -     |    -    | OCIE2B   |  OCIE2A  |  TOIE2  |
-
     On TCCR2A, setting the COM2A bits and COM2B bits to 10 provides non-inverted PWM for outputs A and B,
     Clears OC2A & OC2B on Compare Match, set OC2A & OC2B at BOTTOM,
     setting the waveform generation mode bits WGM to 011 selects fast PWM
@@ -223,8 +218,7 @@ void setup(void)
   /* set up PID */
   myPID.SetSampleTime(JoyStickScanRate);      //set how often run PID same as JoystickScanRate
   myPID.SetOutputLimits(0, (double)MaxPower); //set range of PID output
-  myPID.SetMode(AUTOMATIC);                   //Turn on the PID loop
-
+ 
 #ifdef HardwareTest
   myHardwareTests.displayHelpMsg();       //on startup print command help message if hardware test enabled
 #endif
@@ -241,7 +235,9 @@ void loop(void) {
     ledFlashCounter = millis();               //reset counter
   }
 
-  /* check if a valid slot has been under the sensor, if so calculate GoKart speed */
+  /* check if a valid slot has been under the sensor, if so get time between slots in microseconds
+    the slot time is used by hardware diagnostics or normal code
+  */
   unsigned long slotTime = 0;                 //used to store the timing data from the ISR
   cli();                                      //disable interrupts as about to read variables accessed by ISR
   if (validSlotUnderSensor) {                 //get state of speed sensor that is set by the ISR
@@ -249,44 +245,46 @@ void loop(void) {
     validSlotUnderSensor = false;             //clear flag, this is set by the ISR
   }
   sei();                                      //interrupts back on
-  if (slotTime)                               //check if a valid time
-    goKartSpeed = mySlottedDisk.calculateSpeed(slotTime);                               //yes, calculate wheel speed in mm/sec
-  else if (millis() - mySlottedDisk.getTimeSinceLastSpeedCalculation() > noSlotForTime) //no, check time we last had a slot detected, by checking time between speed calculations
-    goKartSpeed = mySlottedDisk.calculateSpeed(0);                                      //no slot for a nominated time, assume we are stopped
 
   //run hardware tests or normal main loop code, if HardwareTest defined, run the HardwareTest code, otherwise run normal main loop code
 #ifdef HardwareTest
   while (Serial.available () > 0)                                         //run hardware test, this code is normally only used for setup of H/W, and normally not compiled
-    myHardwareTests.processIncomingByte (Serial.read ());                 //read typed input from serial monitor
-  if (myHardwareTests.motorCommandEntered()) {                            //check if a new command has been entered
+    myHardwareTests.processIncomingByte (Serial.read());                  //read typed input from serial monitor
+
+  //check if valid command has been entered
+  if (myHardwareTests.motorCommandEntered()) {                            //check if motor command
     left_Motor.updatePower(myHardwareTests.getLeftTestSpeed());           //yes, update motor power from the entered speed
     left_Motor.updateDir(!myHardwareTests.getLeftTestDir());              //update motor dir from the entered direction, complemented as motors orinetated by 180 degrees
     right_Motor.updatePower(myHardwareTests.getRightTestSpeed());         //update motor power from the entered speed
     right_Motor.updateDir(myHardwareTests.getRightTestDir());             //update motor dir from the entered direction
     myHardwareTests.clearMotorCommandEnteredFlag();                       //clear flag ready for the next command
-
     Serial.print("Leftspeed:"); Serial.print(myHardwareTests.getLeftTestSpeed()); Serial.print(" Rightspeed:"); Serial.print(myHardwareTests.getRightTestSpeed());
     Serial.print(" Leftdir:");  Serial.print(myHardwareTests.getLeftTestDir());   Serial.print(" Rightdir:");   Serial.println(myHardwareTests.getRightTestDir());
   }
+
   if (myHardwareTests.getJoystickDisplayTime())                                             //if non zero time, display both joystick axis
     if ((millis() - joys_Time_Of_Last_Scan) > myHardwareTests.getJoystickDisplayTime()) {   //check if enough time elaspsed since last time to display joystick x and y axis
       joys_Time_Of_Last_Scan = millis();                                                    //yes, save time joystick last displayed
       Serial.print("Joystick X:"); Serial.print(js.get_X_Axis()); Serial.print(" Y:"); Serial.println(js.get_Y_Axis());
     }
-  if (myHardwareTests.getSensorDisplayFlag()) {                           //check if to display sensor
-    bool state = mySlottedDisk.getSensorState();
-    if (lastSensorState != state) {                                       //has sensor state changed?
-      Serial.print("Sensor:"); Serial.print(state);                     //yes, print out the state and time measured by the isr
-      Serial.print(" Time:"); Serial.println(slotTime);
-      lastSensorState = state;                                            //save new state
-    }
-  }                                                                       //end hardware tests
-#else
-  if ((millis() - joys_Time_Of_Last_Scan) <= JoyStickScanRate)  //run normal program, check if time to scan joystick for changes to x and y axis
-    return;                                   //no, not yet time to scan so return
-  joys_Time_Of_Last_Scan = millis();          //yes, save time joystick last scanned, calculate the speed and then check x and Y axis for changes
 
-  //if no speed calculations after this time assume GoKart is stopped
+  if (myHardwareTests.getSensorDisplayFlag()) {                           //check if to display sensor
+    if (slotTime)  {                                                      //yes, check if ISR has detected a valid slot
+      Serial.print("Time:");  Serial.println(slotTime / 1000);            //yes, display time calculated by the ISR, convert from micro to millseconds
+      Serial.print("Speed:"); Serial.println(mySlottedDisk.calculateSpeed(slotTime));   //display speed
+    }
+  }//end hardware tests
+  
+#else
+  //run normal program, calculates speed, scans joystick and runs pid then updates motors
+  if (slotTime)                                                           //check if ISR has detected a valid slot
+    goKartSpeed = mySlottedDisk.calculateSpeed(slotTime);                 //yes, calculate wheel speed in mm/sec
+  else if (millis() - mySlottedDisk.getTimeSinceLastSpeedCalculation() > noSlotForTime) //no, check time we last had a slot detected, by checking time between speed calculations
+    goKartSpeed = mySlottedDisk.calculateSpeed(0);                        //if too long between slots assume GoKart is stopped
+
+  if ((millis() - joys_Time_Of_Last_Scan) < JoyStickScanRate)             //check if time to scan joystick for changes to x and y axis
+    return;                                                               //no, not yet time to scan so return
+  joys_Time_Of_Last_Scan = millis();                                      //yes, save time joystick last scanned, calculate the speed and then check x and Y axis for changes
 
   /*check if x axis or y axis of joystick has changed
     if one has changed, as y determines speed forwards or backwards, always process y before x
@@ -307,23 +305,22 @@ void loop(void) {
      if PID did a computation, get the output and calculate left and right motor power, and update PWM outputs to the motor
      to prevent possible damage to motors, before update direction check if there is a change of direction and only allow if motors at a low power level
   */
-  input     = (double)goKartSpeed;                  //get input ready for pid
-  setpoint  = (double)yReqSpeed;                    //get setpoint ready for PID
+  input     = (double)goKartSpeed;                                    //get input ready for pid
+  setpoint  = (double)yReqSpeed;                                      //get setpoint ready for PID
 
-  if (myPID.Compute()) {                                               //check if PID loop did a computation, ie in automatic and internal timer has expired
-    PID_DEBUG_PRINT("setpoint:", setpoint, " input:", input, " output:", output); //if PID_DEBUG_PRINT defined print out results to the serial monitor
+  if (myPID.Compute()) {                                              //check if PID loop did a computation, ie in automatic and internal timer has expired
     leftPower = rightPower = (uint8_t) output;                        //yes, update power from PID to each wheel taking account of turn request from the x axis
     if (xTurningDegrees != 0 && xDir == LEFT)                         //is it a request to turn and the request is to the left
       leftPower = (uint8_t)map(xTurningDegrees, 90, 0, 0, output);    //yes, slow left wheel, by reducing the power by the amount of turning degrees, & leave right wheel unchanged
     else if (xTurningDegrees != 0 && xDir == RIGHT)                   //no, check if a request to move right
       rightPower = (uint8_t)map(xTurningDegrees, 90, 0, 0, output);   //yes, slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
+    PID_DEBUG_PRINT("     input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " "); //if  PID_DEBUG_PRINT defined print to serial monitor
 
-    MAIN_LOOP_DEBUG_PRINT("     input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " "); //if MAIN_LOOP_DEBUG defined print to serial monitor
     left_Motor.updatePower(leftPower);                  //update motor power from the PID output after taking into account turning
     right_Motor.updatePower(rightPower);                //update motor speed from the requested speed after taking into account turning
     if (checkOkToChangeDir(yDir, (uint8_t)output)) {    //check ok to change direction, so only cchange direction at low power
       right_Motor.updateDir(yDir);                      //update motor direction from y axis as determines forwards or back
-      left_Motor.updateDir(yDir);                      //update motor direction from y axis as determines forwards or back, complimented as motors orinentated by 180 degrees
+      left_Motor.updateDir(yDir);                       //update motor direction from y axis as determines forwards or back, complimented as motors orinentated by 180 degrees
       currentDir = yDir;                                //save new direction
     }
   }                                                     //end of normal code

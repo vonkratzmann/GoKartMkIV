@@ -11,7 +11,7 @@
  */
 
 //if HardwareTest defined, compile the HardwareTest code, otherwise ignore and compile normal code
-#define HardwareTest
+//#define HardwareTest
 
 /* define to run joystick code debugging which which read the joystick and print to the serial monitor
   comment out before code is released
@@ -47,6 +47,7 @@
 #endif
 
 /* define to run joystick code debugging with a slow scan rate
+ * this reduces amout of output to the serial monitor 
   comment out before code is released
 */
 //#define JOYSTICK_DEBUG_SCAN
@@ -91,9 +92,9 @@
 //#define PID_DEBUG
 
 #ifdef   PID_DEBUG
-#define  PID_DEBUG_PRINT(x, y, z, a, b, c)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.println(c)
+#define  PID_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e); Serial.println(f)
 #else
-#define  PID_DEBUG_PRINT(x, y, z, a, b, c)
+#define  PID_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)
 #endif
 
 /* define to run main loop code debugging which print to the serial monitor

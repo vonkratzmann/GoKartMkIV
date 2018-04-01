@@ -40,7 +40,7 @@ unsigned int SlottedDisk::getSpeed(void) {
 
 
 //get sensor state
-/* used to read sensor state, calculation of time between slots is done by the interrupt 
+/* used to read sensor state, calculation of time between slots is done by the interrupt service routine
  * this function is not used by the ISR, this is used for hardware testing
  */
 boolean SlottedDisk::getSensorState() {
