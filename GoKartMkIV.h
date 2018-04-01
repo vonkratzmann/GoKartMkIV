@@ -79,7 +79,6 @@
   comment out before code is released
 */
 //#define  SENSOR_DEBUG
-
 #ifdef   SENSOR_DEBUG
 #define  SENSOR_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.println(b)
 #else
@@ -90,11 +89,17 @@
   comment out before code is released
 */
 //#define PID_DEBUG
-
 #ifdef   PID_DEBUG
-#define  PID_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e); Serial.println(f)
+#define  PID_DEBUG_PRINT(x, y, z, a, b, c, d, e, f) Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e); Serial.println(f)
 #else
 #define  PID_DEBUG_PRINT(x, y, z, a, b, c, d, e, f)
+#endif
+
+//#define PID_DEBUG1
+#ifdef   PID_DEBUG1
+#define  PID_DEBUG_PRINT1(x, y, z, a, b, c, d, e) Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e)
+#else
+#define  PID_DEBUG_PRINT1(x, y, z, a, b, c, d, e)
 #endif
 
 /* define to run main loop code debugging which print to the serial monitor

@@ -4,8 +4,7 @@
 
    This Library is licensed under the MIT License
  **********************************************************************************************/
-
-#include "Arduino.h"
+#include "GoKartMkIV.h"
 #include "PID_v1.h"
 
 /*Constructor (...)*********************************************************
@@ -41,24 +40,21 @@ bool PID::Compute()
   {
     /*Compute all the working error variables*/
     double error = *mySetpoint - *myInput;
-    //Serial.print("error:"); Serial.println(error);
-
     errSum += error;
-    //Serial.print("errSum:"); Serial.println(errSum);
     double dErr = (error - lastErr);
-    //Serial.print("dErr:"); Serial.println(dErr);
-
-    if (!*mySetpoint && *myInput) {           //no setpoint but moving
+    
+/* ignore case of setpoint == 0, but moving ie input non zero, as can get a short power pulse sent to the motor, 
+ * because sometimes "error-lasterror" can be postive */
+    if (!*mySetpoint && *myInput) {           
       error = 0;
       errSum = 0;
       dErr = 0;
     }
-
     /*Compute PID Output*/
     output = kp * error + ki * errSum + kd * dErr;
-
-    //Serial.print("PIDOutput:"); Serial.println(output); Serial.println();
-
+    
+    PID_DEBUG_PRINT1("error:", error," errSum:", errSum, " dErr:", dErr," output", output);        //if  PID_DEBUG_PRINT1 defined print to serial monitor
+   
     if (output > outMax) output = outMax;
     else if (output < outMin) output = outMin;
     *myOutput = output;
