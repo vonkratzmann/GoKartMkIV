@@ -22,17 +22,17 @@
    12V DC battery
    Microprocessor - Arduino Uno running a ATmega328
    Driver Printed Circuit Boards for the two DC motors
-   zener/resistor acting as a DC power supply for the microprocessor
+   small DC to DC power supply to limit voltage level input for the microprocessor
    Each motor via a sprocket drives a chain to the two rear wheels
-   Rear castor wheel with a sensor used to calculate the speed
+   Rear castor wheel with a slotted disk passing under a sensor used to calculate the speed
 
-   The program reads the joystick at a preddefined rate
+   The main program checks if a slot has been detected by the sensor and calculates the gokart speed
+   reads the joystick at a preddefined rate
    converts these readings into a setpoint for a PID algorithm along with the current speed from the sensor.
    The PID then calculates the power output power for the motors
-   This power ouput is converted to a Pulse width Modulated output and along with direction is used to drive the motors
+   This power ouput is converted to a Pulse Width Modulated output and along with direction is used to drive the motors
 
-   Uses counter 2 and interrupts to generate fast mode pwm pulses, freq is 1.960kHz
-   Normal operation the diagnostic led fashes on and off every second via the ISR
+   Normal operation the diagnostic led fashes on and off every second 
 
    The main loop has into two exclusive parts, :
    1. is used to test the hardware by a simple command interface via the serial monitor. A define statement "#define HardwareTest" in GoKartMkIV.h enables
@@ -40,10 +40,10 @@
    2. is the normal main program. This has a number of simple debug print statements which can be enable by the #DEFINEs in GoKartMkIV.h
    these can be used to debug the code in the normal main loop.
 
-   With reagrd to testing and debugging there is some overlap between the two parts of the main program
+   With regard to testing and debugging there is some overlap between the two parts of the main program
 
 ** Software Structure Overview **
-   The system consists of 6 files:
+   The system consists of the following files:
     GOKartMKIV.ino:   Variable declarations, oject definitions, ISR, Setup and main loop
     GOKartMKIV.h:     Diagnostic definitions, I/O and constants
     joystick.cpp:     Joystick class member functions
@@ -54,34 +54,32 @@
     slotteddisk.h:    Slotted disk class decelerations
     hardwaretests.cpp:Hardwaretests  class member functions
     hardwaretests.h:  Hardwaretests Motor class decelerations
+    pid.cpp:          Modified version od Standard Arduino PID library
+    pid.h:            PID class member functions         
+    
 
-    The main loop logic for the x axis is:
-    check if time to flash the onboard led on or off, used to show program and isr are running
+    The main loop logic for the joystick is:
     check if time to read the joystick, then
     check if x axis of joystick has changed and check if y axis of joystick has changed by calling "check_X_Axis()" and "check_Y_Axis()"
 
     if either one has changed process the change,
     as y changes speed forwards or backwards, always process y before x
     use the y to firstly set the requested speed and direction for either forwards or backwards by calling process_Y()
-    the reverse speed maximum has a seperate limit to the forward speed to prevent moving in reverse too quickly
+    as a safety measure, the reverse requested speed is a fraction of the forward requested speed
     This requested speed is the setpoit for the PID alogorithm, which calculates the output power
-
-
-    then use x to increase or decrease the requested speed of the left or right wheels to enable turning by calling process_X()
+    Then use x to increase or decrease the requested speed of the left or right wheels to enable turning by calling process_X()
     to turn slow down the wheel of the direction you want to turn and leave the other wheel unchanged
-    Note the value of X is scaled as a percentage of the current y speed to limit turning rate.
-    The output
-
     Then calls:
-      "left_Motor.update_Speed() to update motor speed from the requested speed
+      "left_Motor.updatePower() to update motor speed from the requested speed
       "left_Motor.updateDir()" to update motor direction from the requested direction
-      "right_Motor.update_Speed()" to update motor speed from the requested speed
+      "right_Motor.updatePOwer()" to update motor speed from the requested speed
       "right_Motor.updateDir()" to update motor direction from the requested direction
 
       *** Note ****
       as motor sprockets face each other, ie orientated by 180 degrees,
-      the direction of the left motor is complemented compared to the right, so both wheels turn in the same direction.
-      Could have changed the wiring to left motor to adress this issue, but felt it was easier to leave the wiring the same for each motor
+      normally the direction of the left motor would be complemented compared to the right, so both wheels turn in the same direction.
+      but although the motors are meant to be identical, the direction the motor rotates for a specified polarity is different
+      so each motor has to be tested indvidually and the software set up accordingly.
 */
 
 #include "GoKartMkIV.h"
@@ -89,7 +87,7 @@
 #include "motor.h"
 #include "slotteddisk.h"
 #include "hardwaretests.h"
-#include "PID_v1.h"
+#include "pid.h"
 
 unsigned int  ledFlashCounter = 0;            //used in main loop to show the program is running by flashing the led
 unsigned long joys_Time_Of_Last_Scan = 0;     //track when we last scanned for joystick changes
@@ -159,11 +157,8 @@ ISR(PCINT1_vect)
     }
   }
 }                                         //end of ISR(INT0_vect)
-// PID Tuning parameters
-double Kp = 0.10;      //Proportional Gain
-double Ki = 0.010;     //Integral Gain
-double Kd = 0.50;      //Differential Gain
-double setpoint = 0, input = 0, output = 0;     //These are variables accessed by the PID Compute() function and code in the main loop, assume all stopped at startup
+
+double setpoint = 0, input = 0, output = 0;                 //These are variables accessed by the PID Compute() function and code in the main loop, assume all stopped at startup
 
 /* define PID Loops, Input is our PV, Output is our u(t), Setpoint is our SP */
 PID myPID(&input, &output, &setpoint, Kp, Ki, Kd);          //constructor also call set tunnings
@@ -175,7 +170,7 @@ void setup(void)
   pinMode(LedPin, OUTPUT);
   digitalWrite(LedPin, HIGH);     // sets the LED on
 
-  Serial.begin(9600);             //set up serial port for any debug prints
+  Serial.begin(9600);             //set up serial port for any debug prints  
 
   /* Set up PWM
     Timer 0, is 8 bits used by fuction millis();
@@ -280,7 +275,7 @@ void loop(void) {
   if (slotTime)                                                           //check if ISR has detected a valid slot
     goKartSpeed = mySlottedDisk.calculateSpeed(slotTime);                 //yes, calculate wheel speed in mm/sec
   else if (millis() - mySlottedDisk.getTimeSinceLastSpeedCalculation() > noSlotForTime) //no, check time we last had a slot detected, by checking time between speed calculations
-    goKartSpeed = mySlottedDisk.calculateSpeed(0);                        //if too long between slots assume GoKart is stopped
+    goKartSpeed = mySlottedDisk.calculateSpeed(0);                        //too long between slots detected assume GoKart stopped, use calculateSpeed() so times stored in slotted disk are updated
 
   if ((millis() - joys_Time_Of_Last_Scan) < JoyStickScanRate)             //check if time to scan joystick for changes to x and y axis
     return;                                                               //no, not yet time to scan so return

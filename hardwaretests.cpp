@@ -9,7 +9,7 @@
      Ld sets direction of the left  motor to the value of d which has to be between f(forwards)or b(backwards), if error direction set to forwards
      Rd sets direction of the right motor to the value of d which has to be between f(forwards)or b(backwards), if error direction set to forwards
      Dz display joystick x and y axis every z milliseconds, if error stop the display
-     Ds display sensor input state if there is change in state, if error stop the display
+     Ds display the time between slots detected by the sensor 
 */
 
 HardwareTests::HardwareTests() {
@@ -27,7 +27,7 @@ void HardwareTests::displayHelpMsg(void) {
   Serial.println("Ld set direction of left motor,  d = f or b, forwards/backwards, if error d = forwards");
   Serial.println("Ld set direction of right motor, d = f or b, forwards/backwards, if error d = forwards");
   Serial.println("Dz display joystick x and y axis every z milliseconds, if error z = 0");
-  Serial.println("Ds display sensor input state each time changes, if error stop the display");
+  Serial.println("Ds display the time between slots");
   Serial.println("H display this message");
 }                                                                                                 //end of displayHelpMsg()
 

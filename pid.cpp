@@ -1,11 +1,18 @@
 /**********************************************************************************************
+   Modified version of 
    Arduino PID Library - Version 1.2.1
    by Brett Beauregard <br3ttb@gmail.com> brettbeauregard.com
 
    This Library is licensed under the MIT License
+
+   Reason for the modifcations were to:
+   - originally allow to enter some prints to the Serial monitor to debug the program and tune the PID
+   - simplified as did not need fuctions such as multiple constructors, SetMode(), SetControllerDirection(), display tuning parameters
+    - in compute() simplified eg removed code for Add Proportional on Measurement and others
+    - added code to clear error variables when setpoint was zero and input was not zero, as would ocassionally get an output power pulse
  **********************************************************************************************/
 #include "GoKartMkIV.h"
-#include "PID_v1.h"
+#include "pid.h"
 
 /*Constructor (...)*********************************************************
       The parameters specified here are those for for which we can't set up
@@ -40,6 +47,7 @@ bool PID::Compute()
   {
     /*Compute all the working error variables*/
     double error = *mySetpoint - *myInput;
+    
     errSum += error;
     double dErr = (error - lastErr);
     

@@ -17,7 +17,6 @@
   comment out before code is released
 */
 //#define  JOYSTICK_DEBUG
-
 #ifdef   JOYSTICK_DEBUG
 #define  JOYSTICK_DEBUG_PRINT(x, y, z, a, b)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.println(b)
 #else
@@ -28,7 +27,6 @@
   comment out before code is released
 */
 //#define  JOYSTICK_PROCX_DEBUG
-
 #ifdef   JOYSTICK_PROCX_DEBUG
 #define  JOYSTICK_PROCX_DEBUG_PRINT(x, y, z, a, b, c)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.println(c)
 #else
@@ -39,7 +37,6 @@
   comment out before code is released
 */
 //#define  JOYSTICK_PROCY_DEBUG
-
 #ifdef   JOYSTICK_PROCY_DEBUG
 #define  JOYSTICK_PROCY_DEBUG_PRINT(x, y, z, a, b, c)    Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.println(c)
 #else
@@ -56,7 +53,6 @@
   comment out before code is released
 */
 //#define  JOYSTICK_FORCEDEBUG
-
 #ifdef   JOYSTICK_FORCEDEBUG
 #define  JOYSTICK_DEBUG_Y_EQUALS_256     y_New = 256;
 #define  JOYSTICK_DEBUG_X_EQUALS_256     x_New = 256;
@@ -97,7 +93,7 @@
 
 //#define PID_DEBUG1
 #ifdef   PID_DEBUG1
-#define  PID_DEBUG_PRINT1(x, y, z, a, b, c, d, e) Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.print(e)
+#define  PID_DEBUG_PRINT1(x, y, z, a, b, c, d, e) Serial.print(x); Serial.print(y); Serial.print(z); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.println(e)
 #else
 #define  PID_DEBUG_PRINT1(x, y, z, a, b, c, d, e)
 #endif
@@ -124,11 +120,16 @@
  * 15        4167
  * 17.5      4861
  */
-const unsigned int MaxSpeedKmh      =  5;                                       //maximum speed in km/hr
+const unsigned int MaxSpeedKmh      =  3;                                       //maximum speed in km/hr
 const unsigned int MaxSpeedmmPerSec = MaxSpeedKmh * 1000000 / 3600;             //maximum speed in mm/sec
 const uint8_t      MaxPower         = 255;                                      //255 gives 100% duty cycle to the PWM, ie max power
 const uint8_t      LowPower         = MaxPower * .1;                            //Power limit below which we can change irection
 const int          ReverseSpeedSlower = 5;                                      //Slow reverse speed compared to forward speed as a safety measure
+
+// PID Tuning parameters
+const double Kp = 0.10;         //Proportional Gain
+const double Ki = 0.005;        //Integral Gain
+const double Kd = 0.050;        //Differential Gain
 
 /* set up directions for motors */
 #define FORWARD     true
@@ -213,6 +214,6 @@ const uint8_t LedPin        =  13;              //LED connected to digital pin 1
   ISR has to be changed if the SensorDsikPin is changed
 */
 #define SensorDiskPin  A2
-const unsigned long noSlotForTime = 2000;       //if no valid slots for this period, assume GoKart is stopped         
+const unsigned long noSlotForTime = 500;       //if no valid slots for this period in millisecs, assume GoKart is stopped         
 
 #endif
