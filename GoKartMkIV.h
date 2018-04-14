@@ -13,6 +13,17 @@
 //if HardwareTest defined, compile the HardwareTest code, otherwise ignore and compile normal code
 //#define HardwareTest
 
+/* define to run code to display number of times around the main loop in a second
+   used to give a crude figure for processor utilisation
+   comment out before code is released
+*/
+#define  LOOPCNT_DEBUG
+#ifdef   LOOPCNT_DEBUG
+#define  LOOPCNT_DEBUG_PRINT(x, y)    Serial.print(x); Serial.println(y)
+#else
+#define  LOOPCNT_DEBUG_PRINT(x, y)
+#endif
+
 /* define to run joystick code debugging which which read the joystick and print to the serial monitor
   comment out before code is released
 */

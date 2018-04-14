@@ -227,16 +227,19 @@ void setup(void)
 /*** Main Loop ***/
 
 void loop(void) {
-  mainLoopCounter++;                          //count number of times around the main loop, used to give indication of CPU utilisation 
+  mainLoopCounter++;                                    //count number of times around the main loop, used to give crude indication of CPU utilisation 
   if (millis() - ledFlashCounter >= 1000 ) {
-    toggleLed();                              //yes, flash the led, to show something is happening
-    ledFlashCounter = millis();               //reset counter
+    toggleLed();                                        //yes, flash the led on and off every second, to show something is happening
+    ledFlashCounter = millis();                         //reset counter
+    LOOPCNT_DEBUG_PRINT("LoopCnt:", mainLoopCounter++); //if defined print out count of time in main loop
+    mainLoopCounter = 0;                                //clear counter
+    
   }
 
   /* check if a valid slot has been under the sensor, if so get time between slots in microseconds
     the slot time is used by hardware diagnostics or normal code
   */
-  unsigned long slotTime = 0ul;                 //used to store the timing data from the ISR
+  unsigned long slotTime = 0ul;               //used to store the timing data from the ISR
   cli();                                      //disable interrupts as about to read variables accessed by ISR
   if (validSlotUnderSensor) {                 //get state of speed sensor that is set by the ISR
     slotTime = timeBetweenSlots;              //just had a valid slot under the sensor, get the time between slots calculated by the ISR
