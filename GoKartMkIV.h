@@ -126,10 +126,13 @@ const uint8_t      MaxPower         = 255;                                      
 const uint8_t      LowPower         = MaxPower * .1;                            //Power limit below which we can change irection
 const int          ReverseSpeedSlower = 5;                                      //Slow reverse speed compared to forward speed as a safety measure
 
-// PID Tuning parameters
-const double Kp = 0.10;         //Proportional Gain
-const double Ki = 0.005;        //Integral Gain
-const double Kd = 0.050;        //Differential Gain
+/* PID Parameters */
+
+/* sample time is set to 100 times faster than desired settling time */
+const long PIDSampleTime = 1.5 * 1000 / 100;   //sample time in milliseconds, assuming the settling time is 1.5 seconds
+const double Kp = 0.10;                       //Proportional Gain tuning parameter
+const double Ki = 0.005;                      //Integral Gain tuning parameter
+const double Kd = 0.050;                      //Differential Gain tuning parameter
 
 /* set up directions for motors */
 #define FORWARD     true
@@ -178,11 +181,11 @@ const int Stopped_Low  = 485;                     //setjoystick low range for st
 
 #ifndef   JOYSTICK_DEBUG_SCAN
 /* note this is the normal version, change this if you want to change the speed of response of the system */
-const unsigned long JoyStickScanRate   = 50;   //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
+const unsigned long JoyStickScanRate   = 50ul; //scan every 50 ms or 1/20 of a second, (see comments above), normal scan rate
 const int           JoyStick_Max_ROC   = 48;   //limit rate of change allowable by the joystick (see comments above)
 #else
 /* note this is the debug version, uses a slower scan rate to limit the amount of debug data displyed on the serial monitor window*/
-const unsigned long JoyStickScanRate   = 500;   //scan every 500 ms or 1/2 of a second, (see comments above), slower for debugging
+const unsigned long JoyStickScanRate   = 500ul; //scan every 500 ms or 1/2 of a second, (see comments above), slower for debugging
 const int           JoyStick_Max_ROC   = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
 
@@ -214,6 +217,6 @@ const uint8_t LedPin        =  13;              //LED connected to digital pin 1
   ISR has to be changed if the SensorDsikPin is changed
 */
 #define SensorDiskPin  A2
-const unsigned long noSlotForTime = 500;       //if no valid slots for this period in millisecs, assume GoKart is stopped         
+const unsigned long noSlotForTime = 500ul;       //if no valid slots for this period in millisecs, assume GoKart is stopped         
 
 #endif

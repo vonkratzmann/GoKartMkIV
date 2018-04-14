@@ -7,7 +7,7 @@
 #include "Arduino.h"
 #include "GoKartMkIV.h"
 
-const unsigned long NoisePeriod        = 250;      //pulses must be longer than this many microseconds otherwise they are considered noise
+const unsigned long NoisePeriod        = 250ul;      //pulses must be longer than this many microseconds otherwise they are considered noise
 /*********************************************************************************************************
 *                                            *** NOTE ***                                                *
 * slotDebounceTime needs to be adjusted if the maximum speed, wheel size or number of slots is changed   *
@@ -40,8 +40,6 @@ class SlottedDisk
     bool			sensorState;		        //stores if a slot is under the detector,
     bool      lastSensorState;        //stores previous state
     bool      debouncedState;         //stores deounced state
-    unsigned long   myTimeBetweenSlots [3] = {0, 0, 0};     //store last three values and average to calculate speed
-    int             slotTimeCounter;
     unsigned int    wheelSpeedmmPerSec = 0;                 //speed in millmeters/second, used as provides appropiate size numbers using type integer, eg 15km/hr = 4,167mm/sec
     unsigned long   timeSinceLastSpeedCalculation;          //record time last calculated speed, used to check if gokart is stopped
   public:

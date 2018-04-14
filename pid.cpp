@@ -10,6 +10,7 @@
    - simplified as did not need fuctions such as multiple constructors, SetMode(), SetControllerDirection(), display tuning parameters
     - in compute() simplified eg removed code for Add Proportional on Measurement and others
     - added code to clear error variables when setpoint was zero and input was not zero, as would ocassionally get an output power pulse
+    - added code to limit intergal term to max power
  **********************************************************************************************/
 #include "GoKartMkIV.h"
 #include "pid.h"
@@ -48,8 +49,12 @@ bool PID::Compute()
     /*Compute all the working error variables*/
     double error = *mySetpoint - *myInput;
     
-    errSum += error;
-    double dErr = (error - lastErr);
+    errSum += error;                                //do integral term
+    double errSumTerm = errSum * ki;                
+    if (errSumTerm > outMax)                        //check term not too large
+      errSumTerm = outMax;                          //yes limit to max output
+      
+    double dErr = (error - lastErr);                //do differential term
     
 /* ignore case of setpoint == 0, but moving ie input non zero, as can get a short power pulse sent to the motor, 
  * because sometimes "error-lasterror" can be postive */
@@ -59,7 +64,7 @@ bool PID::Compute()
       dErr = 0;
     }
     /*Compute PID Output*/
-    output = kp * error + ki * errSum + kd * dErr;
+    output = kp * error + ki * errSumTerm + kd * dErr;
     
     PID_DEBUG_PRINT1("error:", error," errSum:", errSum, " dErr:", dErr," output", output);        //if  PID_DEBUG_PRINT1 defined print to serial monitor
    
