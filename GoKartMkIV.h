@@ -17,7 +17,7 @@
    used to give a crude figure for processor utilisation
    comment out before code is released
 */
-#define  LOOPCNT_DEBUG
+//#define  LOOPCNT_DEBUG
 #ifdef   LOOPCNT_DEBUG
 #define  LOOPCNT_DEBUG_PRINT(x, y)    Serial.print(x); Serial.println(y)
 #else
@@ -61,12 +61,13 @@
 //#define JOYSTICK_DEBUG_SCAN
 
 /* define to run joystick code debugging which force a value from the joystick
+   can also use to tune PID by putting in s step response 
   comment out before code is released
 */
-//#define  JOYSTICK_FORCEDEBUG
+#define  JOYSTICK_FORCEDEBUG
 #ifdef   JOYSTICK_FORCEDEBUG
-#define  JOYSTICK_DEBUG_Y_EQUALS_256     y_New = 256;
-#define  JOYSTICK_DEBUG_X_EQUALS_256     x_New = 256;
+#define  JOYSTICK_DEBUG_Y_EQUALS_256     y_New = 0;
+#define  JOYSTICK_DEBUG_X_EQUALS_256     x_New = 500;
 #else
 #define  JOYSTICK_DEBUG_Y_EQUALS_256
 #define  JOYSTICK_DEBUG_X_EQUALS_256
@@ -109,6 +110,14 @@
 #define  PID_DEBUG_PRINT1(x, y, z, a, b, c, d, e)
 #endif
 
+#define PID_DEBUG_GRAPH
+#ifdef   PID_DEBUG_GRAPH
+#define  PID_DEBUG_GRAPH_PRINT(x) Serial.println(x)
+#else
+#define  PID_DEBUG_GRAPH_PRINT(x)
+#endif
+
+
 /* define to run main loop code debugging which print to the serial monitor
   comment out before code is released
 */
@@ -140,10 +149,10 @@ const int          ReverseSpeedSlower = 5;                                      
 /* PID Parameters */
 
 /* sample time is set to 100 times faster than desired settling time */
-const long PIDSampleTime = 1.5 * 1000 / 100;   //sample time in milliseconds, assuming the settling time is 1.5 seconds
-const double Kp = 0.10;                       //Proportional Gain tuning parameter
-const double Ki = 0.005;                      //Integral Gain tuning parameter
-const double Kd = 0.050;                      //Differential Gain tuning parameter
+const long PIDSampleTime = 2.0 * 1000 / 100;    //sample time in milliseconds, assuming the settling time is 2 seconds
+const double Kp = 0.30;                         //Proportional Gain tuning parameter
+const double Ki = 1.0;                          //Integral Gain tuning parameter
+const double Kd = 0.0;                          //Differential Gain tuning parameter
 
 /* set up directions for motors */
 #define FORWARD     true
@@ -200,7 +209,7 @@ const unsigned long JoyStickScanRate   = 500ul; //scan every 500 ms or 1/2 of a 
 const int           JoyStick_Max_ROC   = 48;    //limit rate of change allowable by the joystick (see comments above)
 #endif
 
-const int  Noise_Mask                   = 0xFFF0; //clear bottom bits to mask any noise on signal
+const int  Noise_Mask                   = 0xFFF8; //clear bottom bits to mask any noise on signal
 
 /* ADC I/O for Joystick*/
 const uint8_t Xaxis_JoystickAnalogPin   = 0;      //x axis of joystick

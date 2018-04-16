@@ -91,7 +91,7 @@
 
 
 unsigned long  mainLoopCounter = 0ul;         //count number of times around the main loop, used to give indication of CPU utilisation 
-unsigned int  ledFlashCounter = 0;            //used in main loop to show the program is running by flashing the led
+unsigned long ledFlashCounter = 0ul;          //used in main loop to show the program is running by flashing the led
 unsigned long joys_Time_Of_Last_Scan = 0ul;   //track when we last scanned for joystick changes
 unsigned int  goKartSpeed = 0;                //stores speed of GoKart
 
@@ -172,7 +172,7 @@ void setup(void)
   pinMode(LedPin, OUTPUT);
   digitalWrite(LedPin, HIGH);     // sets the LED on
 
-  Serial.begin(9600);             //set up serial port for any debug prints
+  Serial.begin(38400);             //set up serial port for any debug prints
 
   /* Set up PWM
     Timer 0, is 8 bits used by fuction millis();
@@ -231,7 +231,7 @@ void loop(void) {
   if (millis() - ledFlashCounter >= 1000 ) {
     toggleLed();                                        //yes, flash the led on and off every second, to show something is happening
     ledFlashCounter = millis();                         //reset counter
-    LOOPCNT_DEBUG_PRINT("LoopCnt:", mainLoopCounter++); //if defined print out count of time in main loop
+    LOOPCNT_DEBUG_PRINT("LoopCnt:", mainLoopCounter); //if defined print out count of time in main loop
     mainLoopCounter = 0;                                //clear counter
     
   }
@@ -315,7 +315,7 @@ void loop(void) {
       leftPower = (uint8_t)map(xTurningDegrees, 90, 0, 0, output);    //yes, slow left wheel, by reducing the power by the amount of turning degrees, & leave right wheel unchanged
     else if (xTurningDegrees != 0 && xDir == RIGHT)                   //no, check if a request to move right
       rightPower = (uint8_t)map(xTurningDegrees, 90, 0, 0, output);   //yes, slow right wheel speed, by the amount of turning degrees, & leave left wheel unchanged
-    PID_DEBUG_PRINT("     input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " "); //if  PID_DEBUG_PRINT defined print to serial monitor
+    PID_DEBUG_PRINT("input:", input, " setpoint:", setpoint, " leftPower:", leftPower, " rightPower:", rightPower, " "); //if  PID_DEBUG_PRINT defined print to serial monitor
 
     left_Motor.updatePower(leftPower);                  //update motor power from the PID output after taking into account turning
     right_Motor.updatePower(rightPower);                //update motor speed from the requested speed after taking into account turning

@@ -1,5 +1,5 @@
 /**********************************************************************************************
-   Modified version of 
+   Modified version of
    Arduino PID Library - Version 1.2.1
    by Brett Beauregard <br3ttb@gmail.com> brettbeauregard.com
 
@@ -48,26 +48,26 @@ bool PID::Compute()
   {
     /*Compute all the working error variables*/
     double error = *mySetpoint - *myInput;
-    
+
     errSum += error;                                //do integral term
-    double errSumTerm = errSum * ki;                
+    double errSumTerm = errSum * ki;
     if (errSumTerm > outMax)                        //check term not too large
-      errSumTerm = outMax;                          //yes limit to max output
-      
+      errSum = outMax / ki;                         //yes limit errSum * Ki to max output
+
     double dErr = (error - lastErr);                //do differential term
-    
-/* ignore case of setpoint == 0, but moving ie input non zero, as can get a short power pulse sent to the motor, 
- * because sometimes "error-lasterror" can be postive */
-    if (!*mySetpoint && *myInput) {           
+
+    /* ignore case of setpoint == 0, but moving ie input non zero, as can get a short power pulse sent to the motor,
+       because sometimes "error-lasterror" can be postive */
+    if (!*mySetpoint && *myInput) {
       error = 0;
       errSum = 0;
       dErr = 0;
     }
     /*Compute PID Output*/
     output = kp * error + ki * errSumTerm + kd * dErr;
-    
-    PID_DEBUG_PRINT1("error:", error," errSum:", errSum, " dErr:", dErr," output", output);        //if  PID_DEBUG_PRINT1 defined print to serial monitor
-   
+    PID_DEBUG_PRINT1("error:", error, " errSum:", errSum, " dErr:", dErr, " output", output);      //if  PID_DEBUG_PRINT1 defined print to serial monitor
+    PID_DEBUG_GRAPH_PRINT(output);                                                                 //if  PID_DEBUG_GRAPH_PRINT defined print to serial monitor
+   PID_DEBUG_GRAPH_PRINT(output);
     if (output > outMax) output = outMax;
     else if (output < outMin) output = outMin;
     *myOutput = output;

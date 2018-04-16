@@ -43,6 +43,7 @@ bool JoyStick::check_X_Axis (void)               //check joystick for any change
   x_New &= Noise_Mask;                          //zero bottom bits to prevent unnecessary calls in case of noise on ADC input
   if ( x_Cur != x_New)                          //Check if changed from last read
   {
+    JOYSTICK_DEBUG_PRINT(__FUNCTION__, " x_New:", x_New, " x_Cur:", x_Cur);  // if joystick debug defined prints out position of joystick on serial monitor
     x_Chnged = true;                            //yes, set flag to say it has changed
     diff = x_New - x_Cur;
     if (abs(diff) > JoyStick_Max_ROC)           //check if difference greater then max rate of change (ROC)
@@ -53,10 +54,7 @@ bool JoyStick::check_X_Axis (void)               //check joystick for any change
         x_Cur -= JoyStick_Max_ROC;              //reading has gone down,so limit acceleration by subtracting max rate of change
     }
     else
-    {
       x_Cur = x_New;                          // change less than max rate of change, so accept new value
-    }
-    JOYSTICK_DEBUG_PRINT(__FUNCTION__, " x_New:", x_New, " x_Cur:", x_Cur);  // if joystick debug defined prints out position of joystick on serial monitor
   }
   return x_Chnged;
 }
@@ -78,6 +76,7 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
   y_New &= Noise_Mask;                          //zero bottom bits to prevent unnecessary calls in case of noise on ADC input
   if ( y_Cur != y_New)                          //Check if changed from last read
   {
+    JOYSTICK_DEBUG_PRINT(__FUNCTION__, " y_New:", y_New, " y_Cur:", y_Cur);  // if joystick debug defined prints out position of joystick on serial monitor
     y_Chnged = true;                             //yes, set flag to say it has changed
     diff = y_New - y_Cur;
     if (abs(diff) > JoyStick_Max_ROC)       //check if difference greater then max rate of change (ROC)
@@ -88,10 +87,7 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
         y_Cur -= JoyStick_Max_ROC;          //reading has gone down,so limit acceleration by subtracting max rate of change
     }
     else
-    {
       y_Cur = y_New;                        // change less than max rate of change, so accept new value
-    }
-    JOYSTICK_DEBUG_PRINT(__FUNCTION__, " y_New:", y_New, " y_Cur:", y_Cur);  //if joystick debug defined prints out position of joystick on serial monitor
   }
   return y_Chnged;
 }
@@ -134,7 +130,7 @@ void JoyStick::process_Y(unsigned int *new_Spd, bool *new_Dir)            //proc
   if (y_Cur <= Stopped_High && y_Cur >= Stopped_Low)            //check if in the stopped range
   {
     *new_Spd = 0;                                               //yes, stopped so update speed to say stopped, no need to set direction
-    JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__, " (stopped)", " new_Spd:", *new_Spd, " new_Dir:", *new_Dir); //if joystick_procy_debug defined prints out results on serial monitor
+    JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__, " (stopped)", " new_Spd(mm/sec):", *new_Spd, " new_Dir:", *new_Dir); //if joystick_procy_debug defined prints out results on serial monitor
   }
   else                                                          //no, joystick requesting movement
   {
@@ -146,7 +142,7 @@ void JoyStick::process_Y(unsigned int *new_Spd, bool *new_Dir)            //proc
           overcomes issue where "0 to Stopped_Low" is different to "Stopped_High to 1023"
       */
       *new_Spd = map(y_Cur, Stopped_Low - 1, 0, 0, MaxSpeedmmPerSec);
-      JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__, " (low)", " new_Spd:", *new_Spd, " new_Dir:", *new_Dir); //if joystick_procy_debug defined prints out results on serial monitor
+      JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__, " (low)", " new_Spd(mm/sec):", *new_Spd, " new_Dir:", *new_Dir); //if joystick_procy_debug defined prints out results on serial monitor
     }
     else                                                        //no, reversing
     {
@@ -156,7 +152,7 @@ void JoyStick::process_Y(unsigned int *new_Spd, bool *new_Dir)            //proc
           overcomes issue where "0 to Stopped_Low" is different to "Stopped_High to 1023"
       */
       *new_Spd = map(y_Cur, Stopped_High + 1, 1023, 0, MaxSpeedmmPerSec);
-      JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__, " (high)", " new_Spd:", *new_Spd, " new_Dir:", *new_Dir); //if joystick_procy_debug defined prints out results on serial monitor
+      JOYSTICK_PROCY_DEBUG_PRINT(__FUNCTION__, " (high)", " new_Spd(mm/sec):", *new_Spd, " new_Dir:", *new_Dir); //if joystick_procy_debug defined prints out results on serial monitor
     }
   }
 }
