@@ -64,10 +64,9 @@ bool PID::Compute()
       dErr = 0;
     }
     /*Compute PID Output*/
-    output = kp * error + ki * errSumTerm + kd * dErr;
+    output = kp * error + ki * errSum + kd * dErr;
     PID_DEBUG_PRINT1("error:", error, " errSum:", errSum, " dErr:", dErr, " output", output);      //if  PID_DEBUG_PRINT1 defined print to serial monitor
     PID_DEBUG_GRAPH_PRINT(output);                                                                 //if  PID_DEBUG_GRAPH_PRINT defined print to serial monitor
-   PID_DEBUG_GRAPH_PRINT(output);
     if (output > outMax) output = outMax;
     else if (output < outMin) output = outMin;
     *myOutput = output;

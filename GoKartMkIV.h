@@ -58,20 +58,7 @@
  * this reduces amout of output to the serial monitor 
   comment out before code is released
 */
-//#define JOYSTICK_DEBUG_SCAN
 
-/* define to run joystick code debugging which force a value from the joystick
-   can also use to tune PID by putting in s step response 
-  comment out before code is released
-*/
-#define  JOYSTICK_FORCEDEBUG
-#ifdef   JOYSTICK_FORCEDEBUG
-#define  JOYSTICK_DEBUG_Y_EQUALS_256     y_New = 0;
-#define  JOYSTICK_DEBUG_X_EQUALS_256     x_New = 500;
-#else
-#define  JOYSTICK_DEBUG_Y_EQUALS_256
-#define  JOYSTICK_DEBUG_X_EQUALS_256
-#endif
 
 /* define to run motor code debugging which print to the serial monitor
   comment out before code is released
@@ -149,10 +136,44 @@ const int          ReverseSpeedSlower = 5;                                      
 /* PID Parameters */
 
 /* sample time is set to 100 times faster than desired settling time */
-const long PIDSampleTime = 2.0 * 1000 / 100;    //sample time in milliseconds, assuming the settling time is 2 seconds
-const double Kp = 0.30;                         //Proportional Gain tuning parameter
-const double Ki = 1.0;                          //Integral Gain tuning parameter
-const double Kd = 0.0;                          //Differential Gain tuning parameter
+const long PIDSampleTime = 1.5 * 1000 / 100;     //sample time in milliseconds, assuming the settling time is 1.5 seconds
+const double Kp = 0.025;                          //Proportional Gain tuning parameter
+const double Ki = 0.1;                           //Integral Gain tuning parameter
+const double Kd = 0.0;                           //Differential Gain tuning parameter
+
+/* using JOYSTICK_DEBUG_Y_EQUALS_VAL the power output values for the following tuning parameters were with settling time of 3 seconds
+   Y    Kp=.4 Kp=.3 Kp=.25  Kp=.2 Kp=.2 Kp=.1 Kp=.1   Kp=.05   Kp=.1 
+        Ki=10 Ki=10 Ki=10   Ki=15 Ki=10 Ki=10 Ki= 1.0 Ki= 1.0  Ki= 0.05
+  400     313        291   284    284   269   269       262     268
+  300     384
+  200     450                  
+  100     522 
+    0     588       463     422   422   338   338               338
+   
+   using JOYSTICK_DEBUG_Y_EQUALS_VAL the power output values for the following tuning parameters were with settling time of 1.5 seconds
+   Y    Kp=.4   Kp=.3     Kp=.25  Kp=.2   Kp=.2     Kp=.1   Kp=.1      Kp=.05   Kp=.025 
+        Ki=10   Ki=10     Ki=10   Ki=10   Ki= 5     Ki= 5   Ki= 2.5   Ki= 2.5   Ki= 1.0
+  400    60,312  30,298           30,284   ?,284    ?,269     ?2,268   ?,262      258                 
+  300        
+  200                              ?,353                        
+  100         
+    0   400,588  375,505          300,422  300,422  300,338   310,338   ?,297     276 
+   
+ */
+//#define JOYSTICK_DEBUG_SCAN
+
+/* define to run joystick code debugging which force a value from the joystick
+   can also use to tune PID by putting in s step response 
+  comment out before code is released
+*/
+#define  JOYSTICK_FORCEDEBUG
+#ifdef   JOYSTICK_FORCEDEBUG
+#define  JOYSTICK_DEBUG_Y_EQUALS_VAL     y_New=00;
+#define  JOYSTICK_DEBUG_X_EQUALS_VAL     x_New=512;
+#else
+#define  JOYSTICK_DEBUG_Y_EQUALS_VAL
+#define  JOYSTICK_DEBUG_X_EQUALS_VAL
+#endif
 
 /* set up directions for motors */
 #define FORWARD     true

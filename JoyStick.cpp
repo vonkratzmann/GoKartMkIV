@@ -38,7 +38,7 @@ bool JoyStick::check_X_Axis (void)               //check joystick for any change
   bool x_Chnged = false;                        //flag joy stick position has changed
   x_New = analogRead(Xaxis_JoystickAnalogPin); //read joystick x position and put into x_New
 
-  JOYSTICK_DEBUG_X_EQUALS_256                   //if debug is defined, sets a fixed value for x for debugging
+  JOYSTICK_DEBUG_X_EQUALS_VAL                   //if debug is defined, sets a fixed value for x for debugging
 
   x_New &= Noise_Mask;                          //zero bottom bits to prevent unnecessary calls in case of noise on ADC input
   if ( x_Cur != x_New)                          //Check if changed from last read
@@ -71,7 +71,7 @@ bool JoyStick::check_Y_Axis (void)               //check joystick for any change
   bool y_Chnged = false;                        //flag joy stick position has changed
   y_New = analogRead(Yaxis_JoystickAnalogPin);   //read joystick y position and put into y_new
 
-  JOYSTICK_DEBUG_Y_EQUALS_256                  //if debug is defined, sets a fixed value for x for debugging
+  JOYSTICK_DEBUG_Y_EQUALS_VAL                  //if debug is defined, sets a fixed value for x for debugging
 
   y_New &= Noise_Mask;                          //zero bottom bits to prevent unnecessary calls in case of noise on ADC input
   if ( y_Cur != y_New)                          //Check if changed from last read
